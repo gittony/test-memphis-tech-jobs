@@ -5,5 +5,8 @@
   "type": "module",
   "description": "Curated job board for software/data roles in Greater Memphis.",
   "scripts": {},
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0"
+  }
 }

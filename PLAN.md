@@ -185,7 +185,7 @@ New files: `lib/filter.js` (the rule set — this is the one file you'll come ba
 ```
 - **0 pass** is expected, not a bug — Phase 1/2 already showed Medtronic's 5 Memphis-based postings are all facilities/quality/inventory roles, and this confirms none of Medtronic's ~110 tech-titled roles anywhere are actually located in Memphis right now.
 - **95** postings failed on location alone (real tech titles — Cybersecurity Specialist, Software Engineer, etc. — just located in Hyderabad, India, Medtronic's main engineering hub).
-- **14 uncertain**, all software/security titles whose location field just says "2 Locations," "7 Locations," etc. with no detail — genuinely can't be resolved by rules alone, so they're queued for Phase 4's AI check, which can be asked to fetch and read the actual location list.
+- **14 uncertain**, all software/security titles whose location field just says "2 Locations," "7 Locations," etc. with no detail. *(Update from Phase 4: it turned out all 14 of these were resolvable by rules too — see below. AI ended up not being needed at all for Medtronic's current data.)*
 - One good sanity check: "Senior Program Manager IBP – CST – Lafayette, CO **or Memphis, TN**" correctly fails — the location matches, but "Program Manager" isn't a software/data title, so the title rule (correctly) blocks it regardless of location.
 - Two borderline titles I chose to exclude by default, worth a second look once we're onboarding employers with real Memphis tech postings to test against: "Supply Chain Data Solutions Architect" (has "Data" but is a supply-chain role) and "Senior IT Scrum Master" (agile delivery role, not hands-on engineering).
 
@@ -204,13 +204,34 @@ New files: `lib/filter.js` (the rule set — this is the one file you'll come ba
 - A log of every API call (input sent, output received) so you can audit decisions later.
 - A per-run cost estimate printed to the console (token counts × Haiku pricing).
 
-**What you need from me to flag now:** you'll need an Anthropic API key by this phase. It goes in `.env` as `ANTHROPIC_API_KEY=...` — never committed, and `.env` is already gitignored from Phase 0.
+**What you need from me to flag now:** you'll need an Anthropic API key by this phase. It goes in `.env` as `ANTHROPIC_API_KEY=...` — never committed, and `.env` is already gitignored from Phase 0. ✅ Done — you added it.
 
 **Teaching note:** This is the one phase touching a paid API, so we'll keep the blast radius small: only ambiguous postings get sent (should be a handful per employer, not hundreds), and I'll show you the exact prompt so you know what's being asked and paid for.
 
 **Done when:**
 - Running the pipeline end to end sends only the uncertain bucket to the API, merges the results back into your job data, and prints a cost estimate under a cent for a normal day's run.
 - You can verify: the log file shows one entry per uncertain posting, and the estimated cost matches roughly (uncertain count × ~$0.001).
+
+### Phase 4 status: built and verified
+
+New files: `lib/ai-classify.js` (the Claude Haiku 4.5 call — structured JSON output via `output_config.format`, no manual prompt-parsing needed) and `scripts/enrich-uncertain.js` (the full pipeline: rules → location resolver → AI for whatever's left, plus audit logging and cost estimate).
+
+**A genuinely useful discovery from building this phase:** while wiring up the AI step, I found that Workday's per-job detail page reveals the *real* location list for "N Locations" postings — for free, no AI needed (this is what became the location resolver from earlier). Running it against the 14 postings flagged uncertain in Phase 3 resolved **all 14 by rules alone**:
+- **2 pass** — real Memphis-eligible postings! "Security Engineering Manager" and "Senior Manager - Cybersecurity OT Manufacturing & Distribution" both list Memphis, TN among their multiple locations. These are Medtronic's first two postings that would actually appear on the site.
+- **12 fail** — the other locations in their list (Minnesota, Massachusetts, Texas, etc.) don't include Memphis.
+- **0 remained genuinely uncertain** — meaning Claude Haiku wasn't needed at all for Medtronic's data today. That's the ideal outcome for a cost-conscious pipeline: rules resolve everything they can, and AI is reserved for what's actually left.
+
+**Since real data didn't exercise the AI call, I verified it with a synthetic smoke test** (`node scripts/enrich-uncertain.js --smoke-test`) — a made-up "Senior Data Engineer, Remote - United States" posting, clearly labeled as fake in the code and in the log. Claude Haiku correctly returned:
+```
+fail (confidence 0.99) — "Remote - United States" with no specific tie to Greater Memphis;
+a fully remote role without location-specific requirements doesn't count even if the company is HQ'd there.
+```
+Cost for that one real API call: **$0.001**. Logged in full to `data/ai-log.jsonl` (job title, location, the exact verdict/confidence/reason/tags Claude returned, token usage, and cost) — that file is the audit trail this phase promises, and it's committed to the repo so the history builds up over time.
+
+**How to verify yourself:**
+1. Run `node scripts/enrich-uncertain.js` — with today's data it should print `0 genuinely need AI` and `Nothing needs AI review today. $0.00 spent.`
+2. Run `node scripts/enrich-uncertain.js --smoke-test` — should make exactly one real API call, print a verdict for the fake "Smoke Test Co" posting, and report a cost around $0.001.
+3. Open `data/ai-log.jsonl` and confirm there's one JSON line per AI call ever made, each with a verdict, reason, and cost.
 
 ---
 

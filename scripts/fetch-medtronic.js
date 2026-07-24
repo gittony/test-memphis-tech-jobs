@@ -49,6 +49,25 @@ function normalize(posting) {
   };
 }
 
+// Fetches the full detail for one posting — includes the real location list
+// (`location` + `additionalLocations`), which the search results used by
+// fetchMedtronicJobs() don't carry. Used to resolve "N Locations" ambiguity
+// without guessing.
+export async function fetchMedtronicJobDetail(externalPath) {
+  const response = await fetch(`https://${HOST}/wday/cxs/${TENANT}/${SITE}${externalPath}`, {
+    headers: { "User-Agent": USER_AGENT },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Workday detail API returned ${response.status} for ${externalPath}`);
+  }
+
+  const data = await response.json();
+  return data.jobPostingInfo;
+}
+
+export { JOB_BASE_URL };
+
 export async function fetchMedtronicJobs() {
   // Workday's `total` field is only accurate on the first page — every page
   // after that reports total:0 even though jobPostings keeps returning real,
