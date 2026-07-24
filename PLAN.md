@@ -7,7 +7,7 @@ Decisions locked in so far:
 - **Language**: Node.js / JavaScript throughout (pipeline + site), so you're not context-switching languages.
 - **Cost target**: under $5/month, excluding domain.
 - **AI model**: Claude Haiku 4.5 (`claude-haiku-4-5`) for classification only, used sparingly (Phase 4).
-- **Storage**: plain JSON file(s) committed to the repo, unless Phase 2 turns up a reason that's a bad fit.
+- **Storage**: one combined `data/jobs.json` file, committed to the repo — a plain JSON array of all employers' postings.
 - **Site**: static HTML/CSS/JS, no server, no runtime database. Search/filter run in the browser.
 
 Nothing beyond Phase 0 starts until you say go, phase by phase.
@@ -115,7 +115,8 @@ Picked **Medtronic** (`scripts/fetch-medtronic.js`). It calls Medtronic's Workda
 2. It should take about 20-30 seconds (pages through ~57 requests with a polite 300ms delay between each) and print a status line like `Fetched 1124 postings...` to your terminal (stderr) when done.
 3. Open `/tmp/medtronic.json` and confirm it's a JSON array where each entry has `id`, `title`, `location`, `url`, `postedOn`, `company`, `sourceAts`.
 4. Spot check a couple of `url` values by opening them in a browser — they should load real, live Medtronic job postings.
-- You can verify by eyeballing the console output against that employer's actual careers page.
+
+**Phase 1 status: `[x]` verified working — approved, moved on to Phase 2.**
 
 ---
 
@@ -127,13 +128,32 @@ Picked **Medtronic** (`scripts/fetch-medtronic.js`). It calls Medtronic's Workda
 - Read-modify-write logic against a JSON data file: new postings get added, postings seen again get `lastSeenAt` bumped, nothing gets duplicated.
 
 **What you need to decide:**
-- **Storage format** — I'll bring 2-3 concrete options (e.g., one JSON file vs. one file per employer vs. SQLite) with a recommendation once we see how Phase 1's data looks in practice.
+- ~~Storage format~~ — **decided: one combined file, `data/jobs.json`**, a single JSON array holding every employer's postings. Simplest for the eventual static site generator to read, and easiest for you to eyeball the whole dataset at once.
 
-**Teaching note:** "Stable IDs" is the crux of re-run safety. If we ID a posting by hashing its title+location text, an employer editing a typo in the description would make our pipeline think it's a brand-new job. Keying off the ATS's own internal job ID (which Greenhouse/Lever/etc. already provide and don't change) avoids that.
+**Teaching note:** "Stable IDs" is the crux of re-run safety. If we ID a posting by hashing its title+location text, an employer editing a typo in the description would make our pipeline think it's a brand-new job. Keying off the ATS's own internal job ID (which Medtronic's Workday board already provides as a requisition number like `R72844`, and doesn't change) avoids that. Our IDs look like `workday:medtronic:R72844` — ATS + company + the vendor's own ID — so they stay unique once we add more employers.
 
 **Done when:**
 - Running the Phase 1 scraper through this new storage step twice in a row produces zero duplicates and correct `lastSeenAt` timestamps.
 - You can verify: `cat data/jobs.json` (or equivalent) before and after a second run — same job count, updated timestamp.
+
+### Phase 2 status: built and verified
+
+New files: `lib/store.js` (the reusable `loadJobs`/`saveJobs`/`mergeJobs` logic — this is written once and will be reused by every employer's script, not just Medtronic's) and `scripts/run-medtronic.js` (fetches + merges + writes `data/jobs.json`, printing a one-line summary).
+
+Ran it twice against live Medtronic data:
+- **Run 1:** `Medtronic: 1126 new, 0 updated, 0 unchanged. Total stored: 1126.`
+- **Run 2, immediately after:** `Medtronic: 0 new, 0 updated, 1126 unchanged. Total stored: 1126.`
+- Verified directly: all 1,126 `id`s are unique (no duplicates), and every record's `lastSeenAt` advanced on the second run while `firstSeenAt` stayed put — exactly the re-run safety guarantee this phase exists to prove.
+
+**Known, deliberate gap:** if a posting disappears from Medtronic's feed tomorrow, this code currently just... leaves its old record alone forever. Deciding when a missing posting should flip to `expired` is explicitly Phase 6's job, not this one.
+
+**Heads up on repo size:** `data/jobs.json` is committed to git and currently holds all 1,126 of Medtronic's postings worldwide, unfiltered — about 400KB. That's expected right now (Phase 3, next, is what teaches the pipeline to only keep Greater Memphis software/data roles), so don't be surprised the file is big and full of jobs in Hyderabad and Vietnam today. It'll shrink dramatically once filtering is wired in.
+
+**How to verify yourself:**
+1. Run `node scripts/run-medtronic.js` twice in a row.
+2. First run should print something like `1126 new, 0 updated, 0 unchanged`.
+3. Second run should print `0 new, 0 updated, 1126 unchanged` — same total both times.
+4. Open `data/jobs.json` and check a record's `firstSeenAt` vs `lastSeenAt` — after the second run, `lastSeenAt` should be later than `firstSeenAt`.
 
 ---
 

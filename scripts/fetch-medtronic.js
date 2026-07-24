@@ -1,5 +1,9 @@
-// Phase 1 proof-of-concept: fetch Medtronic's live postings from its Workday
-// career site and print normalized JSON to the console. No filtering, no storage.
+// Fetches Medtronic's live postings from its Workday career site and returns
+// them normalized. `node scripts/fetch-medtronic.js` run directly still just
+// prints the JSON to console, as it did in Phase 1 — Phase 2's storage step
+// imports fetchMedtronicJobs() instead of re-implementing this.
+
+import { fileURLToPath } from "node:url";
 
 const TENANT = "medtronic";
 const SITE = "MedtronicCareers";
@@ -32,18 +36,20 @@ async function fetchPage(offset) {
 }
 
 function normalize(posting) {
+  const externalId = posting.bulletFields?.[0] ?? posting.externalPath;
   return {
-    id: posting.bulletFields?.[0] ?? posting.externalPath,
+    id: `workday:medtronic:${externalId}`,
     title: posting.title,
     location: posting.locationsText,
     url: `${JOB_BASE_URL}${posting.externalPath}`,
+    department: null, // Workday's search results don't include this; would need a per-job detail fetch
     postedOn: posting.postedOn,
     company: "Medtronic",
     sourceAts: "workday",
   };
 }
 
-async function fetchAllPostings() {
+export async function fetchMedtronicJobs() {
   // Workday's `total` field is only accurate on the first page — every page
   // after that reports total:0 even though jobPostings keeps returning real,
   // distinct results. So we page until a response comes back short of a full
@@ -66,6 +72,10 @@ async function fetchAllPostings() {
   return { jobs, reportedTotal };
 }
 
-const { jobs, reportedTotal } = await fetchAllPostings();
-console.log(JSON.stringify(jobs, null, 2));
-console.error(`\nFetched ${jobs.length} postings from Medtronic's Workday board (site reported ${reportedTotal} at start).`);
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  const { jobs, reportedTotal } = await fetchMedtronicJobs();
+  console.log(JSON.stringify(jobs, null, 2));
+  console.error(`\nFetched ${jobs.length} postings from Medtronic's Workday board (site reported ${reportedTotal} at start).`);
+}
