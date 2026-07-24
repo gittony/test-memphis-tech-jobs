@@ -9,7 +9,9 @@
     "company": "Medtronic",
     "sourceAts": "workday",
     "firstSeenAt": "2026-07-24T19:58:29.593Z",
-    "lastSeenAt": "2026-07-24T20:00:44.519Z",
+    "lastSeenAt": "2026-07-24T21:02:41.802Z",
+    "status": "active",
+    "missingRuns": 0,
     "resolvedLocations": [
       "Mounds View, Minnesota, United States of America",
       "Fridley, Minnesota, United States of America",
@@ -32,7 +34,9 @@
     "company": "Medtronic",
     "sourceAts": "workday",
     "firstSeenAt": "2026-07-24T19:58:29.593Z",
-    "lastSeenAt": "2026-07-24T20:00:44.519Z",
+    "lastSeenAt": "2026-07-24T21:02:41.802Z",
+    "status": "active",
+    "missingRuns": 0,
     "resolvedLocations": [
       "Mounds View, Minnesota, United States of America",
       "Fridley, Minnesota, United States of America",

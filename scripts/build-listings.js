@@ -15,7 +15,12 @@ if (existsSync(ENV_PATH)) process.loadEnvFile(ENV_PATH);
 const DATA_PATH = fileURLToPath(new URL("../data/jobs.json", import.meta.url));
 const LISTINGS_PATH = fileURLToPath(new URL("../data/listings.json", import.meta.url));
 
-const jobs = JSON.parse(readFileSync(DATA_PATH, "utf8"));
+const allJobs = JSON.parse(readFileSync(DATA_PATH, "utf8"));
+
+// Expired postings (Phase 6: missing for 2+ consecutive runs) stay in
+// data/jobs.json for the record but never make it onto the site.
+const jobs = allJobs.filter((job) => job.status !== "expired");
+console.log(`${allJobs.length - jobs.length} expired posting(s) excluded from consideration.`);
 
 const listings = [];
 const uncertain = [];

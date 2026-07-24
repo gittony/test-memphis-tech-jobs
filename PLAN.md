@@ -281,6 +281,21 @@ New pieces:
 - Simulating a missing posting (temporarily editing test data) shows it survive one missed run, then flip to expired on the second.
 - You can verify by inspecting the job record's status field across two manually-triggered runs.
 
+### Phase 6 status: built and verified
+
+`lib/store.js`'s `mergeJobs()` now tracks two new fields on every stored job: `status` (`active` or `expired`) and `missingRuns` (a counter). Every posting present in a fresh scrape resets to `status: "active", missingRuns: 0`. A posting absent from a scrape gets `missingRuns` bumped by one; it only flips to `status: "expired"` once `missingRuns` reaches 2 — one bad scrape can't wipe out an employer's whole listing set, matching the brief's grace-period requirement exactly. If an expired posting ever reappears, it reactivates cleanly (`status` back to `active`, `missingRuns` back to 0).
+
+`scripts/build-listings.js` now excludes `status: "expired"` postings before running the rule/AI pipeline — they stay in `data/jobs.json` forever (the full history), but never reach `data/listings.json` or the site.
+
+**Verified two ways:**
+1. **Simulated** (`node scripts/verify-expiry.js`) — exactly what the brief asked for: a synthetic posting is fed through `mergeJobs()` across 4 fabricated runs (present → missing once → missing twice → reappears), and every one of the 6 assertions passes: it survives the first miss as `active`, flips to `expired` exactly on the second consecutive miss, and cleanly reactivates when it comes back.
+2. **Real** — ran the actual Medtronic pipeline again (`node scripts/run-medtronic.js`). All 1,131 stored postings now carry `status: "active", missingRuns: 0`, confirming the new fields integrate cleanly with real data, not just the simulation. (5 genuinely new postings appeared since the last run too — Medtronic's feed keeps moving, as expected.)
+
+**How to verify yourself:**
+1. Run `node scripts/verify-expiry.js` — should print 6 lines starting with `ok -` and end with `All expiry logic checks passed.`
+2. Run `node scripts/run-medtronic.js` again for real, then check a record in `data/jobs.json` — it should have `"status": "active"` and `"missingRuns": 0`.
+3. Run `node scripts/build-listings.js` and confirm the "expired posting(s) excluded" line prints `0` right now (nothing's actually expired yet — Medtronic hasn't dropped either of our 2 passing postings).
+
 ---
 
 ## Phase 7 — Scheduling and deploy
