@@ -315,7 +315,7 @@ New pieces:
 - The site updates on its own once a day without you running anything by hand.
 - You can verify: check the Actions tab on GitHub the morning after setup and see a green run, then confirm the live site reflects that run's data.
 
-### Phase 7 status: built, needs two one-time steps from you before it's live
+### Phase 7 status: `[x]` done and verified live
 
 New file: `.github/workflows/daily-pipeline.yml`. It runs daily at 11:00 UTC (~5-6am Memphis time, depending on daylight saving) and can also be triggered manually from GitHub's Actions tab any time. Each run: fetches Medtronic's postings, classifies/enriches them (calling Claude Haiku only for whatever rules can't resolve), rebuilds the site, commits the updated data files back to the repo, and deploys `site/` to GitHub Pages.
 
@@ -341,6 +341,8 @@ Once both are done, go to the **Actions** tab and manually run the "Daily pipeli
 4. Once it finishes, GitHub Pages will show the live URL under Settings → Pages (something like `https://gittony.github.io/test-memphis-tech-jobs/`). Open it and confirm you see the same 2 postings as your local preview.
 5. Check that `data/jobs.json` in the repo got a new commit from `github-actions[bot]` (or no commit at all if nothing changed — either is correct behavior).
 
+**Confirmed live:** [https://gittony.github.io/test-memphis-tech-jobs/](https://gittony.github.io/test-memphis-tech-jobs/) — the scheduled run already produced a real `github-actions[bot]` commit ("Automated data refresh") before this was even checked, confirming the full daily loop (fetch → classify → build → commit → deploy) works unattended. Also bumped `actions/checkout`, `actions/setup-node`, `actions/configure-pages`, `actions/upload-pages-artifact`, and `actions/deploy-pages` to their latest Node 24-native major versions to clear a Node 20 deprecation warning GitHub surfaced on the first run.
+
 ---
 
 ## Phase 8 — Monitoring
@@ -350,10 +352,30 @@ Once both are done, go to the **Actions** tab and manually run the "Daily pipeli
 - A notification path when something breaks (likely: a failure summary posted somewhere you'll actually see it — email or similar; we'll decide the channel here).
 
 **What you need to decide:**
-- Where you want to be notified (email is simplest and free; other options exist if you already use something like Slack).
+- ~~Notification channel~~ — **decided: an auto-filed GitHub Issue.** No new secrets or accounts (the default `GITHUB_TOKEN` already has the needed permission once we grant it `issues: write`), and you already get GitHub's own email notifications for new issues on your repo.
 
 **Done when:**
 - Deliberately breaking one scraper (e.g., pointing it at a bad URL) triggers a visible alert within one daily run cycle, while the other 29 employers keep working.
+
+### Phase 8 status: built and verified
+
+New files:
+- `lib/scraper-health.js` — `recordScraperRun()` upserts a per-employer entry into `data/scraper-health.json` (employer, ok, jobCount, error, ranAt). `classifyEmptyResult()` is the "zero results vs. legitimately zero roles" rule: an empty result only counts as suspicious if that same employer's last successful run had jobs — a scraper going from 1,129 postings to 0 overnight is almost certainly broken, whereas a smaller employer that's simply not hiring right now shouldn't page anyone.
+- `scripts/check-scraper-health.js` — reads `data/scraper-health.json` and, if anything is unhealthy, opens a GitHub Issue titled "Scraper health alert" (or comments on it if one's already open, so a multi-day outage doesn't spam new issues). Once every scraper reports healthy again, it comments and auto-closes that issue. Uses the GitHub REST API directly via `fetch` — no new dependency. Supports `--dry-run` to print what it would do without a real `GITHUB_TOKEN`, which is how this was verified locally.
+
+Changed files:
+- `scripts/run-medtronic.js` — now wraps the fetch in try/catch. A hard failure (network error, bad JSON, etc.) records `ok: false` with the exception message; success runs it through `classifyEmptyResult()` against the previous health entry before recording.
+- `.github/workflows/daily-pipeline.yml` — added `issues: write` to `permissions`; the Medtronic fetch step now has `continue-on-error: true` (so one broken employer's step failing doesn't halt classify/build/deploy for everyone else — this becomes more meaningful once Phase 9 adds more employers); added a "Check scraper health" step after the data commit, passing `GITHUB_TOKEN` and `GITHUB_REPOSITORY`.
+
+**Verified locally two ways** (both via `--dry-run`, since there's no real broken scraper to point at right now):
+1. Ran the real pipeline end to end — `data/scraper-health.json` correctly recorded `medtronic: ok: true, jobCount: 1129`.
+2. Temporarily swapped in a fabricated unhealthy entry (`ok: false`, "returned 0 jobs, previously had 1129") and confirmed `check-scraper-health.js --dry-run` printed the exact issue title and body it would have filed, then restored the real health file afterward.
+
+**How to verify yourself:**
+1. Run `node scripts/run-medtronic.js` — check `data/scraper-health.json` shows `"employer": "medtronic", "ok": true`.
+2. Run `node scripts/check-scraper-health.js --dry-run` — should print `All scrapers healthy.`
+3. To see the alert path without waiting for a real failure: back up `data/scraper-health.json`, overwrite it with an entry that has `"ok": false` and an `"error"` string, run `node scripts/check-scraper-health.js --dry-run` again — it should print the issue title/body it would file — then restore the backup.
+4. Once this is pushed and run for real in Actions (no `--dry-run`), you can deliberately verify the live path by breaking `fetch-medtronic.js`'s URL temporarily, triggering the workflow, watching a real Issue appear in the **Issues** tab, then reverting and confirming the next run closes it.
 
 ---
 
