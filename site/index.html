@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memphis Tech Jobs</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header class="page-header">
+  <h1>Memphis Tech Jobs</h1>
+  <p class="subtitle">Software &amp; data roles actually located in Greater Memphis — not just posted by a company headquartered here.</p>
+</header>
+
+<main>
+  <div class="controls">
+    <input type="search" id="search-input" placeholder="Search title or company&hellip;" aria-label="Search postings">
+    <select id="company-filter" aria-label="Filter by company">
+      <option value="">All companies</option>
+    </select>
+  </div>
+
+  <p id="result-count" class="result-count"></p>
+
+  <ul id="listings" class="listings"></ul>
+
+  <p id="empty-state" class="empty-state" hidden>No postings match your search.</p>
+</main>
+
+<footer class="page-footer">
+  <p id="last-updated"></p>
+</footer>
+
+<script src="./app.js"></script>
+</body>
+</html>

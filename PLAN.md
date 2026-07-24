@@ -249,6 +249,25 @@ Cost for that one real API call: **$0.001**. Logged in full to `data/ai-log.json
 - Running the site build command produces static files in an output folder, and opening `index.html` locally in a browser shows real jobs with working search/filter.
 - You can verify by literally using it: search for a keyword, apply a filter, confirm the results make sense.
 
+### Phase 5 status: built and verified
+
+New pieces:
+- `scripts/build-listings.js` — ties Phases 3+4 together for real: runs the rule filter, then the location resolver, then AI for whatever's left, and writes the final result to `data/listings.json`. This is the file everything downstream (the site, and later expiry) reads from — `data/jobs.json` stays the raw, unfiltered record of everything ever seen.
+- `site/index.html`, `site/styles.css`, `site/app.js` — the static site itself. Plain HTML/CSS/JS, no framework, no build tool. `app.js` fetches `./data/listings.json` at runtime and renders it client-side; search and the company filter both run entirely in the browser.
+- `scripts/build-site.js` — copies `data/listings.json` into `site/data/listings.json` so the page can fetch it.
+- `scripts/serve.js` — a ~25-line static file server using only Node's built-in `http` module. Needed because browsers block `fetch()` against `file://` URLs, so opening `index.html` directly wouldn't load the data — no new dependency for this, since Node already ships everything required.
+
+**Security note:** postings come from external, scraped career sites, so I treated their text as untrusted — the page builds every element via DOM APIs (`textContent`) rather than dropping raw strings into HTML, and only allows `http(s)://` links through, so a stray character (or a genuinely malicious feed down the line) can't inject markup or a `javascript:` link.
+
+**Verified with a real screenshot** (via a headless browser), not just by reading the code: the page loads, shows "2 postings," and both current listings render correctly — including "Memphis, Tennessee, United States of America (+ 7 other locations)" for the Security Engineering Manager role, which is the resolved location data from Phase 4 showing through, not the raw "8 Locations" placeholder text.
+
+**How to verify yourself:**
+1. Run these three in order: `node scripts/build-listings.js`, `node scripts/build-site.js`, `node scripts/serve.js`.
+2. Open `http://localhost:8080` in your browser.
+3. You should see "Memphis Tech Jobs," a search box, a company dropdown, and 2 posting cards (today's real Medtronic results).
+4. Type "Security" in the search box — should narrow to 1 result. Clear it, then pick "Medtronic" from the company dropdown — should show both (since both are Medtronic). Click a job title — should open the real Medtronic posting in a new tab.
+5. Stop the server with Ctrl+C when done.
+
 ---
 
 ## Phase 6 — Expiry logic

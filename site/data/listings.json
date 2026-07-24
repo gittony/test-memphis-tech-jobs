@@ -1,0 +1,49 @@
+[
+  {
+    "id": "workday:medtronic:R62361",
+    "title": "Security Engineering Manager",
+    "location": "8 Locations",
+    "url": "https://medtronic.wd1.myworkdayjobs.com/MedtronicCareers/job/Mounds-View-Minnesota-United-States-of-America/Security-Engineering-Manager_R62361-2",
+    "department": null,
+    "postedOn": "Posted 16 Days Ago",
+    "company": "Medtronic",
+    "sourceAts": "workday",
+    "firstSeenAt": "2026-07-24T19:58:29.593Z",
+    "lastSeenAt": "2026-07-24T20:00:44.519Z",
+    "resolvedLocations": [
+      "Mounds View, Minnesota, United States of America",
+      "Fridley, Minnesota, United States of America",
+      "Fort Worth, Texas, United States of America",
+      "Lafayette, Colorado, United States of America",
+      "Irvine, California, United States of America",
+      "Jacksonville, Florida, United States of America",
+      "Boston, Massachusetts, United States of America",
+      "Memphis, Tennessee, United States of America"
+    ],
+    "matchedVia": "rules+location-lookup"
+  },
+  {
+    "id": "workday:medtronic:R72732",
+    "title": "Senior Manager - Cybersecurity OT Manufacturing & Distribution",
+    "location": "9 Locations",
+    "url": "https://medtronic.wd1.myworkdayjobs.com/MedtronicCareers/job/Mounds-View-Minnesota-United-States-of-America/Senior-Manager---Cybersecurity-OT-Manufacturing---Distribution_R72732",
+    "department": null,
+    "postedOn": "Posted Today",
+    "company": "Medtronic",
+    "sourceAts": "workday",
+    "firstSeenAt": "2026-07-24T19:58:29.593Z",
+    "lastSeenAt": "2026-07-24T20:00:44.519Z",
+    "resolvedLocations": [
+      "Mounds View, Minnesota, United States of America",
+      "Fridley, Minnesota, United States of America",
+      "Fort Worth, Texas, United States of America",
+      "Lafayette, Colorado, United States of America",
+      "Irvine, California, United States of America",
+      "Jacksonville, Florida, United States of America",
+      "North Haven, Connecticut, United States of America",
+      "Boston, Massachusetts, United States of America",
+      "Memphis, Tennessee, United States of America"
+    ],
+    "matchedVia": "rules+location-lookup"
+  }
+]
