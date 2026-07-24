@@ -1,0 +1,9 @@
+{
+  "name": "memphis-tech-jobs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Curated job board for software/data roles in Greater Memphis.",
+  "scripts": {},
+  "license": "UNLICENSED"
+}
