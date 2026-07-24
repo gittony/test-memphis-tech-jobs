@@ -3,7 +3,7 @@
 Status legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 Decisions locked in so far:
-- **Repo**: private GitHub repo. Not yet created — happens in Phase 0.
+- **Repo**: private GitHub repo, `github.com/gittony/test-memphis-tech-jobs`, created and pushed in Phase 0.
 - **Language**: Node.js / JavaScript throughout (pipeline + site), so you're not context-switching languages.
 - **Cost target**: under $5/month, excluding domain.
 - **AI model**: Claude Haiku 4.5 (`claude-haiku-4-5`) for classification only, used sparingly (Phase 4).
@@ -26,22 +26,71 @@ Nothing beyond Phase 0 starts until you say go, phase by phase.
 **What you need to decide:**
 - Nothing new — repo visibility and language are already decided above.
 
-**What I need from you:**
-- The list of 30 employers, so I can triage their ATS.
-
 **Why ATS triage matters (a quick primer):** Companies rarely build their own job-listing pages from scratch — they buy or embed a hosted "applicant tracking system." Several of the popular ones (Greenhouse, Lever, Ashby) expose a public, undocumented-but-stable JSON API you can call directly, e.g. `boards-api.greenhouse.io/v1/boards/{company}/jobs`. That's vastly easier and more reliable than parsing HTML, because the ATS vendor won't change its JSON shape as often as a company redesigns its careers page. Workday, iCIMS, and Taleo are enterprise systems — technically possible to query but fussier (session tokens, POST-based search, inconsistent per-tenant setup). "Hand-rolled" sites have no shortcut — we'd scrape HTML and hope the markup doesn't change. Sorting employers by ATS up front means we build the easy, high-leverage scrapers first and know exactly what we're up against for the rest.
 
+**Important finding from the triage below:** none of your 30 employers run on Greenhouse, Lever, Ashby, or SmartRecruiters — the ATS family with the cleanest, best-documented public JSON APIs. The real world here skews toward large enterprises and government/institutional employers, who run Workday, iCIMS, Taleo, Oracle Recruiting Cloud, or NEOGOV instead. This changes the original "start with Greenhouse/Lever" assumption from the brief — see the Phase 1 pick below.
+
 **Done when:**
-- Repo exists on GitHub (private), cloned locally, `.env` correctly ignored by git.
-- A table (in this file or a companion doc) listing all 30 employers, their ATS, and a difficulty rank.
+- Repo exists on GitHub (private), cloned locally, `.env` correctly ignored by git. ✅ Done — `github.com/gittony/test-memphis-tech-jobs`.
+- A table (in this file or a companion doc) listing all 30 employers, their ATS, and a difficulty rank. ✅ Done — see table below.
 - You can verify: `git log` shows an initial commit, `git remote -v` shows your GitHub repo, and `cat .gitignore` includes `.env`.
+
+**Phase 0 status: `[x]` done.**
+
+### Employer ATS triage (researched 2026-07-24)
+
+| # | Employer | ATS | Confidence | Notes |
+|---|----------|-----|------------|-------|
+| 1 | FedEx / FedEx Dataworks | Phenom (custom CMS) + Paradox.ai chat; FedEx Freight subsidiary uses Workday | Low | Backend ATS behind the main corporate site isn't exposed. Verify manually before scraping. |
+| 2 | St. Jude Children's Research Hospital | Workday | High | `stjude.wd1.myworkdayjobs.com` |
+| 3 | ALSAC | Workday | High | Shares Workday tenant with St. Jude |
+| 4 | AutoZone | Oracle Recruiting Cloud | High | `hcmUI/CandidateExperience` URL pattern |
+| 5 | Sedgwick | Workday | High | `sedgwick.wd1.myworkdayjobs.com` |
+| 6 | First Horizon | SuccessFactors (probable) | Low | Could not independently confirm; verify manually |
+| 7 | Methodist Le Bonheur Healthcare | Workday | High | TalentBrew front-end over Workday backend |
+| 8 | Baptist Memorial Health Care | iCIMS | High | `employees-bmhcc.icims.com` |
+| 9 | Smith & Nephew | Workday (probable) | Medium | Referenced via recruiting email domain, no direct board URL confirmed |
+| 10 | Medtronic | Workday | High | `medtronic.wd1.myworkdayjobs.com` — clean, direct board URL |
+| 11 | Stryker | Workday | High | `stryker.wd1.myworkdayjobs.com` — clean, direct board URL |
+| 12 | MicroPort Orthopedics | UKG Pro / UltiPro | High | `recruiting.ultipro.com` |
+| 13 | Evernorth / Accredo (Cigna) | Workday | High | `cigna.wd5.myworkdayjobs.com` |
+| 14 | University of Memphis | Oracle Recruiting Cloud | High | Confirmed via live redirect to Oracle Fusion |
+| 15 | University of Tennessee Health Science Center | Taleo | High | `ut.taleo.net` |
+| 16 | Orgill | iCIMS | High | `jobs-orgill.icims.com` |
+| 17 | Helena Agri-Enterprises | ADP Recruiting (RTI) | High | JS-heavy candidate portal |
+| 18 | Mid-America Apartment Communities (MAA) | Workday | High | `maa.wd1.myworkdayjobs.com` |
+| 19 | TruGreen | Paradox (Olivia AI) | High | Conversational chat UI, no plain job list |
+| 20 | Rentokil Terminix | Workday | High | `terminix.wd1.myworkdayjobs.com` |
+| 21 | IMC Companies | Unclear (corporate roles); Tenstreet for driver hiring | Low | Corporate/IT ATS not confirmed — needs manual check |
+| 22 | Buckman | Jobvite | High | `jobs.jobvite.com/buckman` |
+| 23 | Raymond James (Memphis) | Workday | High | `raymondjames.wd1.myworkdayjobs.com` |
+| 24 | Mueller Industries | Dayforce (Ceridian) | High | JS-rendered SPA candidate portal |
+| 25 | International Paper | Oracle Recruiting Cloud | High | Confirmed via live redirect |
+| 26 | Memphis Light, Gas and Water (MLGW) | Taleo | High | `mlgw.taleo.net` |
+| 27 | City of Memphis | NEOGOV (governmentjobs.com) | High | `governmentjobs.com/careers/memphistn` |
+| 28 | Shelby County Government | Oracle Recruiting Cloud | High | Confirmed via county job-openings page |
+| 29 | Memphis-Shelby County Schools | iCIMS | High | Multiple department-specific subdomains |
+| 30 | Naval Support Activity Mid-South (Millington) | USAJOBS.gov (federal) | High | Genuinely public, documented federal API |
+
+### Difficulty ranking (easiest → hardest)
+
+1. **USAJOBS.gov** — Naval Support Activity Mid-South. Actually has an official, documented public API with an API key. Arguably the single easiest employer on the list, though likely few or no software/data roles at this installation.
+2. **Workday** (largest bucket, ~12 employers) — St. Jude, ALSAC, Sedgwick, Methodist Le Bonheur, Medtronic, Stryker, Evernorth/Accredo, MAA, Rentokil Terminix, Raymond James, plus probable Smith & Nephew and FedEx Freight. Undocumented but consistent `/wday/cxs/<tenant>/<site>/jobs` JSON endpoint across all tenants — learn it once on one employer, reuse the pattern for the rest.
+3. **iCIMS** — Baptist Memorial, Orgill, Memphis-Shelby County Schools. Semi-consistent job-search structure, scrapable.
+4. **Taleo** — UTHSC, MLGW. Older but predictable `careersection` URL scheme.
+5. **Oracle Recruiting Cloud** — AutoZone, University of Memphis, International Paper, Shelby County Government. Internal REST API exists but is poorly documented and tenant-specific.
+6. **NEOGOV** — City of Memphis. Consistent structure across all its government clients.
+7. **Niche single-vendor / JS-heavy portals (harder)** — Helena Agri (ADP RTI), MicroPort (UKG/UltiPro), Buckman (Jobvite), Mueller Industries (Dayforce) — each needs its own investigation, JS-rendered candidate portals with no clean public API.
+8. **Conversational / unclear front-ends (hardest)** — TruGreen (Paradox chat UI, no plain job list), First Horizon (unconfirmed), IMC Companies (corporate-role ATS unconfirmed), FedEx main corporate site (Phenom + Paradox chat, backend unconfirmed).
+
+**Caveat:** low-confidence entries (FedEx, First Horizon, Smith & Nephew, IMC Companies) hit fetch errors or lacked a confirming link during automated research — worth a manual look before writing a scraper for them, and before ruling them out as "hard."
 
 ---
 
 ## Phase 1 — One scraper, end to end
 
 **What gets built:**
-- Pick the single easiest employer from the Phase 0 ranking (almost certainly a Greenhouse or Lever company).
+- Pick the single easiest employer from the Phase 0 ranking. Since none of your 30 employers run Greenhouse/Lever/Ashby, and Workday is by far the largest well-documented bucket (~12 employers), the recommendation is to start with **Medtronic** or **Stryker** — both gave clean, directly-confirmed Workday board URLs during triage, so we can be confident the pattern will actually work before we invest more time. Whatever we learn scraping Workday here carries over to ~11 other employers with minimal changes.
 - A script that fetches that employer's postings from the ATS API and prints normalized JSON to the console — title, location string, URL, posted/updated date, department if available.
 - No filtering, no storage, no AI. Just: fetch → shape it into a consistent object → print it.
 
