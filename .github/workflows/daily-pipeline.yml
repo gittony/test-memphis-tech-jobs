@@ -1,0 +1,64 @@
+name: Daily pipeline and deploy
+
+on:
+  schedule:
+    # 11:00 UTC ~= 5-6am Memphis time (Central), depending on daylight saving.
+    - cron: "0 11 * * *"
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Fetch Medtronic postings
+        run: node scripts/run-medtronic.js
+
+      - name: Classify and enrich
+        run: node scripts/build-listings.js
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Build site
+        run: node scripts/build-site.js
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ site/data/
+          git diff --staged --quiet || git commit -m "Automated data refresh $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

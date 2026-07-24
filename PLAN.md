@@ -306,14 +306,40 @@ New pieces:
 - Automatic rebuild and deploy of the static site on every successful run.
 
 **What you need to decide:**
-- **Hosting provider** for the static site — I'll bring options (GitHub Pages, Netlify, Cloudflare Pages) with a recommendation once we're here; all are free at this scale.
-- **Domain name**, if you want a custom one instead of the host's default subdomain.
+- ~~Hosting provider~~ — **decided: GitHub Pages.** This meant making the repo public first, since GitHub Pages only supports private repos on paid plans — you already flipped `github.com/gittony/test-memphis-tech-jobs` to public.
+- ~~Domain name~~ — **decided: the free subdomain for now** (`gittony.github.io/test-memphis-tech-jobs`). Adding a custom domain later is a small, isolated change.
 
 **Teaching note:** "Cron" just means "run on a schedule" — a GitHub Actions cron entry like `0 11 * * *` means "11:00 UTC every day." We'll pick a time that lands sensibly for Memphis local time.
 
 **Done when:**
 - The site updates on its own once a day without you running anything by hand.
 - You can verify: check the Actions tab on GitHub the morning after setup and see a green run, then confirm the live site reflects that run's data.
+
+### Phase 7 status: built, needs two one-time steps from you before it's live
+
+New file: `.github/workflows/daily-pipeline.yml`. It runs daily at 11:00 UTC (~5-6am Memphis time, depending on daylight saving) and can also be triggered manually from GitHub's Actions tab any time. Each run: fetches Medtronic's postings, classifies/enriches them (calling Claude Haiku only for whatever rules can't resolve), rebuilds the site, commits the updated data files back to the repo, and deploys `site/` to GitHub Pages.
+
+**Two things only you can do, since they require clicking around in your GitHub account settings:**
+
+1. **Add your Anthropic API key as a repo secret** (so the workflow can use it without it ever being in the code):
+   - Go to `github.com/gittony/test-memphis-tech-jobs/settings/secrets/actions`
+   - Click **New repository secret**
+   - Name: `ANTHROPIC_API_KEY` — Value: the same key from your local `.env` file
+   - Save
+
+2. **Turn on GitHub Pages, sourced from GitHub Actions** (this is a one-time setting, not something the workflow file can configure itself):
+   - Go to `github.com/gittony/test-memphis-tech-jobs/settings/pages`
+   - Under **Build and deployment → Source**, choose **GitHub Actions** (not "Deploy from a branch")
+   - Save
+
+Once both are done, go to the **Actions** tab and manually run the "Daily pipeline and deploy" workflow once (click it → **Run workflow**) rather than waiting for tomorrow's cron — that's the fastest way to confirm everything actually works end to end.
+
+**How to verify yourself:**
+1. Complete the two steps above.
+2. Go to the **Actions** tab, click **Daily pipeline and deploy** → **Run workflow** → **Run workflow** (the button appears since we added `workflow_dispatch`).
+3. Watch it run — should take under a minute. All steps should go green.
+4. Once it finishes, GitHub Pages will show the live URL under Settings → Pages (something like `https://gittony.github.io/test-memphis-tech-jobs/`). Open it and confirm you see the same 2 postings as your local preview.
+5. Check that `data/jobs.json` in the repo got a new commit from `github-actions[bot]` (or no commit at all if nothing changed — either is correct behavior).
 
 ---
 
