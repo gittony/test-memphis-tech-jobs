@@ -165,12 +165,34 @@ Ran it twice against live Medtronic data:
 - A verdict per posting: **pass** (clearly a fit), **fail** (clearly not — wrong role or wrong location), or **uncertain** (ambiguous location string like "Remote," "Multiple Locations," or a role title that's borderline).
 
 **What you need to decide:**
-- The exact Greater Memphis municipality list and commute radius you consider fair game.
-- Any role-title edge cases you want in/out (e.g., do QA roles count? Engineering managers?).
+- ~~Greater Memphis municipality list~~ — **decided: Memphis + immediate TN suburbs** — Memphis, Germantown, Collierville, Bartlett, Cordova, Millington, Arlington, Lakeland. (Not the full official Memphis MSA, which would have added Mississippi/Arkansas commuter towns — you chose the smaller, simpler list.)
+- ~~Manager/director titles~~ — **decided: included.** "Enterprise Software Engineering Manager," "AI/Data Science Team Manager," etc. all count.
+- ~~General IT roles (business analyst, help desk, ERP)~~ — **decided: excluded.** Only clearly technical roles count — IT Developer/Architect/Technologist, cybersecurity, cloud, data science, etc. IT Business Analyst, IT support/help desk, and SAP/ERP admin roles fail on title even though they're in an "IT" department.
 
 **Done when:**
 - Running the filter against your stored job data produces three clearly separated buckets, and spot-checking a handful from each bucket matches your own judgment.
 - You can verify: a console summary like `42 pass / 61 fail / 8 uncertain`, plus the ability to print the uncertain bucket for manual review.
+
+### Phase 3 status: built and verified
+
+New files: `lib/filter.js` (the rule set — this is the one file you'll come back to tune as we onboard more employers) and `scripts/filter-jobs.js` (prints the summary; pass a bucket name like `uncertain` as an argument to list its contents).
+
+**Design choice worth knowing:** title matching is a whitelist of specific tech-role phrases ("software," "data scientist," "cybersecurity," "cloud engineer," etc.) rather than one broad word like "engineer." That's deliberate — a bare "engineer" pattern would have swept in Medtronic's Quality Engineers, Manufacturing Engineers, and Supplier Quality Engineers, none of which are software/data roles. Because the whitelist requires a specific tech phrase, generic manufacturing/clinical/sales titles fail automatically just by not matching anything — no separate exclusion list needed for those. One real gap this caught during testing: "Cyber Info Assurance Analyst" didn't match a too-narrow `cybersecurity`-only pattern, so the rule is now `\bcyber\b` (broader) instead.
+
+**Result running against Medtronic's real, current 1,126 postings:**
+```
+0 pass / 1112 fail / 14 uncertain
+```
+- **0 pass** is expected, not a bug — Phase 1/2 already showed Medtronic's 5 Memphis-based postings are all facilities/quality/inventory roles, and this confirms none of Medtronic's ~110 tech-titled roles anywhere are actually located in Memphis right now.
+- **95** postings failed on location alone (real tech titles — Cybersecurity Specialist, Software Engineer, etc. — just located in Hyderabad, India, Medtronic's main engineering hub).
+- **14 uncertain**, all software/security titles whose location field just says "2 Locations," "7 Locations," etc. with no detail — genuinely can't be resolved by rules alone, so they're queued for Phase 4's AI check, which can be asked to fetch and read the actual location list.
+- One good sanity check: "Senior Program Manager IBP – CST – Lafayette, CO **or Memphis, TN**" correctly fails — the location matches, but "Program Manager" isn't a software/data title, so the title rule (correctly) blocks it regardless of location.
+- Two borderline titles I chose to exclude by default, worth a second look once we're onboarding employers with real Memphis tech postings to test against: "Supply Chain Data Solutions Architect" (has "Data" but is a supply-chain role) and "Senior IT Scrum Master" (agile delivery role, not hands-on engineering).
+
+**How to verify yourself:**
+1. Run `node scripts/filter-jobs.js` — should print `0 pass / 1112 fail / 14 uncertain (of 1126 total)`.
+2. Run `node scripts/filter-jobs.js uncertain` — should list 14 titles, all software/security roles with vague multi-location text.
+3. Run `node scripts/filter-jobs.js fail | head -20` and spot check a few — should all be clearly non-tech roles or tech roles located outside Memphis.
 
 ---
 
