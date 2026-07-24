@@ -101,6 +101,20 @@ Nothing beyond Phase 0 starts until you say go, phase by phase.
 
 **Done when:**
 - Running `node scripts/fetch-<employer>.js` prints an array of job objects to your terminal, each with the same fields, for a real employer's live postings.
+
+### Phase 1 status: built, awaiting your verification
+
+Picked **Medtronic** (`scripts/fetch-medtronic.js`). It calls Medtronic's Workday endpoint directly (`medtronic.wd1.myworkdayjobs.com/wday/cxs/medtronic/MedtronicCareers/jobs`) and prints normalized JSON — `id`, `title`, `location`, `url`, `postedOn`, `company`, `sourceAts` — for every open posting, unfiltered.
+
+**A real bug we hit and fixed, worth knowing about for every other Workday employer (~11 more):** Workday's API caps `limit` at 20 per request (asking for more returns an HTTP 400), and it only reports the correct total result count on the *first* page — every page after that reports `total: 0` even though it keeps returning real, additional jobs. The fix: page in batches of 20, and keep going until a page comes back with fewer than 20 results (the real end-of-data signal), instead of trusting the `total` field past page 1. This is now handled in `fetch-medtronic.js` and should be copied into every future Workday scraper.
+
+**What we found running it live:** Medtronic currently has 1,124 open postings globally, matching what the site itself reports. Only 5 are Memphis-based, and none of those 5 are software/data roles (they're facilities/quality/inventory positions) — a real, useful example of exactly the problem this project exists to solve (an HQ-adjacent company posting broadly, with almost nothing locally relevant). Title and location filtering are still Phase 3, not built yet — this script intentionally prints everything, unfiltered.
+
+**How to verify yourself:**
+1. Run `node scripts/fetch-medtronic.js > /tmp/medtronic.json`
+2. It should take about 20-30 seconds (pages through ~57 requests with a polite 300ms delay between each) and print a status line like `Fetched 1124 postings...` to your terminal (stderr) when done.
+3. Open `/tmp/medtronic.json` and confirm it's a JSON array where each entry has `id`, `title`, `location`, `url`, `postedOn`, `company`, `sourceAts`.
+4. Spot check a couple of `url` values by opening them in a browser — they should load real, live Medtronic job postings.
 - You can verify by eyeballing the console output against that employer's actual careers page.
 
 ---
