@@ -2,74 +2,74 @@
   {
     "employer": "alsac",
     "jobCount": 16,
-    "ranAt": "2026-07-25T00:51:41.464Z",
+    "ranAt": "2026-07-25T23:45:05.749Z",
     "ok": true
   },
   {
     "employer": "evernorth",
-    "jobCount": 511,
-    "ranAt": "2026-07-25T00:53:09.758Z",
+    "jobCount": 510,
+    "ranAt": "2026-07-25T23:46:31.293Z",
     "ok": true
   },
   {
     "employer": "maa",
     "jobCount": 0,
-    "ranAt": "2026-07-25T00:53:45.305Z",
+    "ranAt": "2026-07-25T23:46:58.878Z",
     "ok": false,
     "error": "Workday API returned 400 at offset 0 (maa/MAA)"
   },
   {
     "employer": "medtronic",
-    "jobCount": 1130,
-    "ranAt": "2026-07-25T00:50:13.943Z",
+    "jobCount": 1094,
+    "ranAt": "2026-07-25T23:43:43.907Z",
     "ok": true
   },
   {
     "employer": "methodist",
-    "jobCount": 619,
-    "ranAt": "2026-07-25T00:54:11.304Z",
+    "jobCount": 615,
+    "ranAt": "2026-07-25T23:47:23.354Z",
     "ok": true
   },
   {
     "employer": "mscs-central",
     "jobCount": 27,
-    "ranAt": "2026-07-25T00:54:45.303Z",
+    "ranAt": "2026-07-25T23:47:59.255Z",
     "ok": true
   },
   {
     "employer": "raymondjames",
     "jobCount": 335,
-    "ranAt": "2026-07-25T00:53:55.424Z",
+    "ranAt": "2026-07-25T23:47:08.615Z",
     "ok": true
   },
   {
     "employer": "sedgwick",
-    "jobCount": 545,
-    "ranAt": "2026-07-25T00:51:42.186Z",
+    "jobCount": 544,
+    "ranAt": "2026-07-25T23:45:06.424Z",
     "ok": true
   },
   {
     "employer": "smithnephew",
-    "jobCount": 385,
-    "ranAt": "2026-07-25T00:54:27.517Z",
+    "jobCount": 378,
+    "ranAt": "2026-07-25T23:47:41.405Z",
     "ok": true
   },
   {
     "employer": "stjude",
-    "jobCount": 170,
-    "ranAt": "2026-07-25T00:51:33.507Z",
+    "jobCount": 169,
+    "ranAt": "2026-07-25T23:44:58.189Z",
     "ok": true
   },
   {
     "employer": "stryker",
     "jobCount": 1142,
-    "ranAt": "2026-07-25T00:52:07.211Z",
+    "ranAt": "2026-07-25T23:45:31.202Z",
     "ok": true
   },
   {
     "employer": "terminix",
     "jobCount": 177,
-    "ranAt": "2026-07-25T00:53:47.076Z",
+    "ranAt": "2026-07-25T23:47:00.700Z",
     "ok": true
   }
 ]
