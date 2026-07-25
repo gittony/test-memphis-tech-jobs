@@ -12,7 +12,9 @@
     "lastSeenAt": "2026-07-25T00:51:41.464Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-07-25",
+    "postedOnApprox": false
   },
   {
     "id": "workday:medtronic:R71969",
@@ -37,7 +39,9 @@
       "Boston, Massachusetts, United States of America",
       "Memphis, Tennessee, United States of America"
     ],
-    "matchedVia": "rules+location-lookup"
+    "matchedVia": "rules+location-lookup",
+    "postedOnDate": "2026-07-25",
+    "postedOnApprox": false
   },
   {
     "id": "workday:medtronic:R72732",
@@ -63,7 +67,9 @@
       "Boston, Massachusetts, United States of America",
       "Memphis, Tennessee, United States of America"
     ],
-    "matchedVia": "rules+location-lookup"
+    "matchedVia": "rules+location-lookup",
+    "postedOnDate": "2026-07-25",
+    "postedOnApprox": false
   },
   {
     "id": "workday:sedgwick:R72714",
@@ -78,7 +84,9 @@
     "lastSeenAt": "2026-07-25T00:51:42.186Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-06-25",
+    "postedOnApprox": true
   },
   {
     "id": "workday:sedgwick:R74119",
@@ -97,7 +105,9 @@
       "Memphis, TN",
       "Telecommuter TN"
     ],
-    "matchedVia": "rules+location-lookup"
+    "matchedVia": "rules+location-lookup",
+    "postedOnDate": "2026-07-08",
+    "postedOnApprox": false
   },
   {
     "id": "workday:sedgwick:R75096",
@@ -112,7 +122,9 @@
     "lastSeenAt": "2026-07-25T00:51:42.186Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-07-14",
+    "postedOnApprox": false
   },
   {
     "id": "workday:smithnephew:R87014",
@@ -127,7 +139,9 @@
     "lastSeenAt": "2026-07-25T00:54:27.517Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-06-25",
+    "postedOnApprox": true
   },
   {
     "id": "workday:stjude:JR6056",
@@ -142,7 +156,9 @@
     "lastSeenAt": "2026-07-25T00:51:33.507Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-06-25",
+    "postedOnApprox": true
   },
   {
     "id": "workday:stjude:JR6606",
@@ -157,7 +173,9 @@
     "lastSeenAt": "2026-07-25T00:51:33.507Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-06-25",
+    "postedOnApprox": true
   },
   {
     "id": "workday:stjude:JR6953",
@@ -172,7 +190,9 @@
     "lastSeenAt": "2026-07-25T00:51:33.507Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-06-25",
+    "postedOnApprox": false
   },
   {
     "id": "workday:stjude:JR6999",
@@ -187,7 +207,9 @@
     "lastSeenAt": "2026-07-25T00:51:33.507Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-06-25",
+    "postedOnApprox": true
   },
   {
     "id": "workday:stjude:JR7117",
@@ -202,7 +224,9 @@
     "lastSeenAt": "2026-07-25T00:51:33.507Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-07-14",
+    "postedOnApprox": false
   },
   {
     "id": "workday:stjude:JR7176",
@@ -217,6 +241,8 @@
     "lastSeenAt": "2026-07-25T00:51:33.507Z",
     "status": "active",
     "missingRuns": 0,
-    "matchedVia": "rules"
+    "matchedVia": "rules",
+    "postedOnDate": "2026-07-03",
+    "postedOnApprox": false
   }
 ]

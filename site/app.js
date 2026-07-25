@@ -7,6 +7,17 @@ const lastUpdated = document.getElementById("last-updated");
 
 let listings = [];
 
+function displayPostedDate(job) {
+  if (!job.postedOnDate) return null;
+  const formatted = new Date(`${job.postedOnDate}T00:00:00Z`).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return job.postedOnApprox ? `Posted before ${formatted}` : `Posted ${formatted}`;
+}
+
 function displayLocation(job) {
   if (!job.resolvedLocations) return job.location;
   const memphisEntry = job.resolvedLocations.find((loc) => /memphis/i.test(loc));
@@ -45,7 +56,7 @@ function render(filtered) {
 
     const meta = document.createElement("p");
     meta.className = "listing-meta";
-    meta.textContent = [job.company, displayLocation(job), job.postedOn].filter(Boolean).join(" · ");
+    meta.textContent = [job.company, displayLocation(job), displayPostedDate(job)].filter(Boolean).join(" · ");
 
     const tagsWrap = document.createElement("div");
     tagsWrap.className = "listing-tags";

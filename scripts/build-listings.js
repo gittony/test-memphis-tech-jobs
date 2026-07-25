@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { classify } from "../lib/filter.js";
 import { resolveUncertainLocations } from "./resolve-locations.js";
 import { classifyUncertainJob } from "../lib/ai-classify.js";
+import { estimatePostedDate } from "../lib/posted-date.js";
 
 const ENV_PATH = fileURLToPath(new URL("../.env", import.meta.url));
 if (existsSync(ENV_PATH)) process.loadEnvFile(ENV_PATH);
@@ -79,6 +80,16 @@ for (const job of resolved.stillUncertain) {
 
 if (resolved.stillUncertain.length > 0) {
   console.log(`AI reviewed ${resolved.stillUncertain.length} posting(s), cost $${aiCostUsd.toFixed(4)}.`);
+}
+
+// Workday only gives us relative text ("Posted 11 Days Ago"); turn that into
+// an actual calendar date for the site using the moment we scraped it.
+for (const listing of listings) {
+  const estimate = estimatePostedDate(listing.postedOn, listing.lastSeenAt);
+  if (estimate) {
+    listing.postedOnDate = estimate.date;
+    listing.postedOnApprox = estimate.approx;
+  }
 }
 
 listings.sort((a, b) => a.id.localeCompare(b.id));

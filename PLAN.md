@@ -268,6 +268,8 @@ New pieces:
 4. Type "Security" in the search box — should narrow to 1 result. Clear it, then pick "Medtronic" from the company dropdown — should show both (since both are Medtronic). Click a job title — should open the real Medtronic posting in a new tab.
 5. Stop the server with Ctrl+C when done.
 
+**Addendum (post-Phase 9): real posted dates instead of relative text.** Workday's search API only ever gives us relative text ("Posted Today," "Posted 11 Days Ago," "Posted 30+ Days Ago") — no actual date field. `lib/posted-date.js` converts that into a real calendar date using the moment each posting was scraped (`lastSeenAt`) as the reference point, since the relative text was accurate as of that scrape. `build-listings.js` computes `postedOnDate`/`postedOnApprox` once for every listing; `site/app.js` displays "Posted July 25, 2026" normally, or "Posted before June 25, 2026" when the source bucket was the capped "30+ Days Ago" (honest about the fact that we only know a lower bound there, not an exact day). Verified with a real screenshot showing both cases rendering correctly.
+
 ---
 
 ## Phase 6 — Expiry logic
