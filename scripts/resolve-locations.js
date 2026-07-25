@@ -24,7 +24,23 @@ export async function resolveUncertainLocations(uncertainJobs, { log = () => {} 
     }
 
     const externalPath = job.url.slice(jobBaseUrl(employer).length);
-    const detail = await fetchWorkdayJobDetail({ ...employer, externalPath });
+
+    // A single flaky/blocked detail request (seen in production: a one-off
+    // 403 from Workday) must not take down the whole pipeline — every other
+    // uncertain posting, and everything downstream (site build, data commit,
+    // deploy, scraper health check), depends on this loop finishing. Treat a
+    // failed detail fetch the same as "no location data available": pass it
+    // on genuinely unresolved rather than crashing.
+    let detail;
+    try {
+      detail = await fetchWorkdayJobDetail({ ...employer, externalPath });
+    } catch (err) {
+      log(`- ${job.title} -> detail fetch failed (${err.message}), leaving uncertain`);
+      results.stillUncertain.push(job);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      continue;
+    }
+
     const allLocations = [detail.location, ...(detail.additionalLocations ?? [])].filter(Boolean);
     const anyMemphis = allLocations.some((loc) => matchesMemphisArea(loc));
 

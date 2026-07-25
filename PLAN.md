@@ -440,6 +440,20 @@ MSCS also runs a separate "instructional" job board (`instructional-scsk12.icims
 2. Run `node scripts/build-listings.js` — MSCS jobs shouldn't add any new postings to `data/listings.json` (still 13, all from the Workday batch) — expected, not a bug.
 3. Check `data/jobs.json` for `"sourceAts": "icims"` entries — every one should have `"location": "Memphis, Tennessee"`.
 
+### Production incident: first scheduled run after slices 1+2 crashed the pipeline
+
+The first real overnight cron run (after Workday + iCIMS employers were added) failed at the "Classify and enrich" step with `Error: Workday detail API returned 403 for /job/.../Security-Engineering-Manager_R62361-2 (medtronic/MedtronicCareers)`, thrown from `fetchWorkdayJobDetail` with no error handling around it in `resolveUncertainLocations`. Two real bugs, both fixed:
+
+1. **A single flaky detail-fetch crashed the entire pipeline, not just that one job.** Workflow step order is Fetch → Classify and enrich → Build site → Commit updated data → Check scraper health → deploy. Because the crash happened inside "Classify and enrich," none of the later steps ran that morning — the site never rebuilt, the fresh scrape data never got committed, and Phase 8's own health-check monitoring never even executed. All 12 employers had almost certainly scraped fine; a single Workday API hiccup on one job's detail lookup blocked everything downstream anyway. Likely cause: GitHub Actions runners use shared datacenter IPs, which are more prone to tripping rate-limiting/bot-detection on Workday's side than a home connection — this same job has otherwise resolved cleanly in every local run. Fixed by wrapping the `fetchWorkdayJobDetail` call in `resolve-locations.js` in a try/catch: a failed detail fetch now falls through to `stillUncertain` (same as "no location data available") instead of crashing everything else.
+2. **`build-listings.js` — the script the real pipeline actually runs — never wrote to `data/ai-log.jsonl` at all.** Phase 4 promised "a log of every API call... so you can audit decisions later," but that logging only ever existed in the separate `enrich-uncertain.js` script, which the workflow doesn't call. Today's real AI call (triggered by the same flaky job, once its detail fetch failed) went completely unlogged — the only trace was an aggregate console line. Fixed by adding the same per-call `appendFileSync` logging (and a per-job console line) to `build-listings.js` directly.
+
+Also worth knowing: the exact same Medtronic posting (`Security Engineering Manager`, R62361) has now, across a handful of runs today, been resolved three different ways — a clean rules+location-lookup pass, a 403 crash, and an AI review that came back "uncertain" (confidence 0.35, since the detail fetch that run returned incomplete location data). This looks like Workday's detail endpoint being genuinely inconsistent under repeated/rapid querying, not a bug in our code — the system's design (grace periods, "uncertain" just means "skip today, try again tomorrow") already tolerates this without manual intervention.
+
+**How to verify yourself:**
+1. Run `node scripts/build-listings.js` — should complete without crashing regardless of whether any individual Workday detail fetch fails.
+2. If a posting needs AI review, check `data/ai-log.jsonl` — it should now gain a new line every real run, not just via `enrich-uncertain.js --smoke-test`.
+3. Trigger the workflow manually (Actions tab → Run workflow) to confirm the full chain — fetch, classify, build, commit, health check, deploy — completes end to end now.
+
 ---
 
 ## Open questions log

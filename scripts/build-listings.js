@@ -3,7 +3,7 @@
 // they can (title/location match, then the Workday location-detail lookup);
 // only what's left after that goes to Claude Haiku. Writes data/listings.json.
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { classify } from "../lib/filter.js";
 import { resolveUncertainLocations } from "./resolve-locations.js";
@@ -14,6 +14,7 @@ if (existsSync(ENV_PATH)) process.loadEnvFile(ENV_PATH);
 
 const DATA_PATH = fileURLToPath(new URL("../data/jobs.json", import.meta.url));
 const LISTINGS_PATH = fileURLToPath(new URL("../data/listings.json", import.meta.url));
+const AI_LOG_PATH = fileURLToPath(new URL("../data/ai-log.jsonl", import.meta.url));
 
 const allJobs = JSON.parse(readFileSync(DATA_PATH, "utf8"));
 
@@ -44,8 +45,26 @@ console.log(
 
 let aiCostUsd = 0;
 for (const job of resolved.stillUncertain) {
-  const { result, costUsd } = await classifyUncertainJob(job);
+  const { result, usage, costUsd } = await classifyUncertainJob(job);
   aiCostUsd += costUsd;
+
+  appendFileSync(
+    AI_LOG_PATH,
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      jobId: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      result,
+      usage,
+      costUsd,
+    }) + "\n"
+  );
+  console.log(
+    `- [${job.id}] ${job.title} -> ${result.locationVerdict} (confidence ${result.confidence}) — ${result.reason}`
+  );
+
   if (result.locationVerdict === "pass") {
     listings.push({
       ...job,
