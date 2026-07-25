@@ -403,7 +403,7 @@ Refactored the Medtronic-only Phase 1 code into a reusable Workday client, since
 **Two real bugs found while scaling to multiple employers — both fixed:**
 
 1. **Cross-employer expiry bug (would have silently broken every employer once a second one existed).** `mergeJobs()` marks any stored job missing from the current `fresh` batch as one run closer to expiring. That's correct when one scraper run always covers *every* job in the store (true with only Medtronic), but with each employer scraped by its own separate run, every other employer's jobs would look "missing" from a run that was never responsible for them — silently expiring all of them within 2 days. Fixed by adding a `scope` filter to `mergeJobs(existing, fresh, { now, scope })`: only jobs `scope` says belong to the employer currently running can accrue a missed run or expire; every other employer's jobs are left untouched. Added a dedicated regression test to `scripts/verify-expiry.js` proving a scoped merge for "Acme Co" doesn't touch "Other Co"'s postings, and verified it against real data too (ran Medtronic and St. Jude back-to-back — both reported the same unchanged counts, neither touched the other).
-2. **No timeout on any Workday `fetch()` call.** One tenant (Smith & Nephew) stalled a real run for 20+ minutes with zero CPU activity — a plain network hang, not an error. Left unfixed, this would eventually hang a GitHub Actions job (burning CI minutes) and block every employer queued behind it in the sequential loop. Fixed with `signal: AbortSignal.timeout(20_000)` on both the search and detail requests in `lib/workday.js`.
+2. **No timeout on any Workday `fetch()` call.** A real run stalled for 20+ minutes on Smith & Nephew's request with zero CPU activity. Checking the Mac's actual sleep/wake log afterward showed the laptop repeatedly idle/maintenance-sleeping right through that whole window (an errand-away period) — so this was very likely the local machine suspending mid-request, not a genuinely unresponsive Workday tenant. Either way, no `fetch()` should be able to hang indefinitely: a laptop sleeping mid-run locally, or a slow host in GitHub Actions (which never sleeps but could still stall), both need a hard ceiling. Fixed with `signal: AbortSignal.timeout(20_000)` on both the search and detail requests in `lib/workday.js`.
 
 **A real location-format bug, also found at scale:** `matchesMemphisArea()` only matched the spelled-out state name ("Memphis, **Tennessee**"), so a genuinely Memphis-based Sedgwick posting ("Memphis, **TN**") was being excluded — some employers' ATS instances format state as the two-letter postal code instead of the full name. Fixed by also accepting a word-boundaried `\btn\b` match alongside the full "tennessee" check in `lib/filter.js` (word-boundaried specifically so it can't match "tn" as a stray substring of an unrelated word).
 
@@ -416,6 +416,29 @@ Refactored the Medtronic-only Phase 1 code into a reusable Workday client, since
 2. Run `node scripts/verify-expiry.js` — should print 7 `ok -` lines including the new "scoped merge" check, ending in `All expiry logic checks passed.`
 3. Run `node scripts/build-listings.js` then `node scripts/build-site.js` then `node scripts/serve.js`, open `http://localhost:8080` — should show 13 postings across St. Jude, Medtronic, Sedgwick, Smith & Nephew, and ALSAC.
 4. Check `data/scraper-health.json` — 10 entries with `"ok": true`, one (`maa`) with `"ok": false` and a real error message.
+
+### Slice 2: iCIMS employers — built and verified (1 of 3 originally-planned employers)
+
+Phase 0's triage assumed all three iCIMS employers (Baptist Memorial, Orgill, Memphis-Shelby County Schools) would follow the same clean pattern. Investigating each one live told a different story — surfaced to you directly, and you picked the recommended path (install Playwright to inspect the one that was still workable, park the other two):
+
+- **Orgill** has moved off iCIMS entirely onto a custom ASP.NET site (`orgill.com/careers`) since Phase 0's triage — reclassified as "hand-rolled" tier, parked for a later batch.
+- **Baptist Memorial**'s current careers site (`careers.baptistonline.org`) sits behind a Cloudflare bot-challenge page. Not attempting to bypass that — it's an active anti-bot measure, and circumventing it would cross from polite scraping into evasion.
+- **Memphis-Shelby County Schools** is still genuinely on iCIMS and workable, but needed real investigation: its job listings render inside a nested iframe, and a plain `curl` of the obvious URL returned an empty shell. Used a temporary headless-browser inspection (Playwright, installed just for this investigation, not added as a project dependency) to capture the exact iframe URL and query-string parameters (`?pr={page}&in_iframe=1&searchRelation=keyword_all&...`) that make iCIMS render full listings as plain server-rendered HTML — once found, no browser is needed at runtime, a normal `fetch()` gets the same HTML.
+
+New files:
+- `lib/icims.js` — `fetchIcimsJobs(employer)`, parses `<li class="iCIMS_JobCardItem">` blocks out of the raw HTML (regex-based, not a full HTML parser — no new dependency for one field-shaped template). Pages via `?pr=0,1,2...` until a page comes back with zero job cards, same "keep going until the real end-of-results signal" pattern as Workday's pagination fix.
+- `lib/icims-employers.js` — config table, same shape as the Workday one. MSCS's entry sets a `fixedLocation: "Memphis, Tennessee"` instead of resolving one per-job — the whole district sits inside Shelby County, so there's no "N Locations" ambiguity to resolve the way Workday's multi-site postings have.
+- `lib/run-icims-employer.js`, `scripts/run-icims-employer.js` (single-employer CLI), `scripts/run-all-icims.js` (the loop the workflow calls) — directly mirror the Workday equivalents.
+- `.github/workflows/daily-pipeline.yml` — added a "Fetch iCIMS employers" step, same `continue-on-error: true` pattern.
+
+**Result:** 27 real MSCS postings fetched, all in facilities/trades/HR/administrative roles (electricians, HVAC techs, a chef, psychologists) — matching what the site visually showed. **Zero passed the tech-role title filter**, which is the correct outcome, not a bug: this is a school district's central office, not a software shop. One near-miss worth knowing about: "Analytics Advisor" (a real Power BI/data-visualization role per its description) didn't match, because the title says "Advisor" rather than "Analyst/Engineer/Scientist" — the same conservative-whitelist tradeoff already accepted in Phase 3 (recall traded for precision), not something fixed unilaterally here.
+
+MSCS also runs a separate "instructional" job board (`instructional-scsk12.icims.com`, teaching positions) — left out for now since it's overwhelmingly non-technical; can be added the same way later if wanted.
+
+**How to verify yourself:**
+1. Run `node scripts/run-icims-employer.js mscs-central` — should print `Memphis-Shelby County Schools: 27 new, 0 updated, 0 unchanged` on a fresh run, `0 new, 0 updated, 27 unchanged` on a re-run.
+2. Run `node scripts/build-listings.js` — MSCS jobs shouldn't add any new postings to `data/listings.json` (still 13, all from the Workday batch) — expected, not a bug.
+3. Check `data/jobs.json` for `"sourceAts": "icims"` entries — every one should have `"location": "Memphis, Tennessee"`.
 
 ---
 
