@@ -21,6 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # main now requires PR approval; the default GITHUB_TOKEN can't push
+          # past that. This PAT belongs to an account with the "Repository
+          # admin" bypass role, so the automated data commit below can still
+          # go straight to main while everything else needs a reviewed PR.
+          token: ${{ secrets.GH_PUSH_TOKEN }}
 
       - uses: actions/setup-node@v7
         with:
