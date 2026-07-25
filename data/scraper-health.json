@@ -2,74 +2,74 @@
   {
     "employer": "alsac",
     "jobCount": 16,
-    "ranAt": "2026-07-24T21:54:06.919Z",
+    "ranAt": "2026-07-25T00:51:41.464Z",
     "ok": true
   },
   {
     "employer": "evernorth",
     "jobCount": 511,
-    "ranAt": "2026-07-24T21:59:25.280Z",
+    "ranAt": "2026-07-25T00:53:09.758Z",
     "ok": true
   },
   {
     "employer": "maa",
     "jobCount": 0,
-    "ranAt": "2026-07-24T22:00:00.254Z",
+    "ranAt": "2026-07-25T00:53:45.305Z",
     "ok": false,
     "error": "Workday API returned 400 at offset 0 (maa/MAA)"
   },
   {
     "employer": "medtronic",
-    "jobCount": 1129,
-    "ranAt": "2026-07-24T21:52:23.867Z",
+    "jobCount": 1130,
+    "ranAt": "2026-07-25T00:50:13.943Z",
     "ok": true
   },
   {
     "employer": "methodist",
     "jobCount": 619,
-    "ranAt": "2026-07-25T00:14:44.247Z",
+    "ranAt": "2026-07-25T00:54:11.304Z",
     "ok": true
   },
   {
     "employer": "mscs-central",
     "jobCount": 27,
-    "ranAt": "2026-07-25T00:34:18.803Z",
+    "ranAt": "2026-07-25T00:54:45.303Z",
     "ok": true
   },
   {
     "employer": "raymondjames",
-    "jobCount": 330,
-    "ranAt": "2026-07-24T22:00:12.194Z",
+    "jobCount": 335,
+    "ranAt": "2026-07-25T00:53:55.424Z",
     "ok": true
   },
   {
     "employer": "sedgwick",
     "jobCount": 545,
-    "ranAt": "2026-07-24T21:54:08.055Z",
+    "ranAt": "2026-07-25T00:51:42.186Z",
     "ok": true
   },
   {
     "employer": "smithnephew",
     "jobCount": 385,
-    "ranAt": "2026-07-25T00:16:27.943Z",
+    "ranAt": "2026-07-25T00:54:27.517Z",
     "ok": true
   },
   {
     "employer": "stjude",
     "jobCount": 170,
-    "ranAt": "2026-07-24T21:53:56.589Z",
+    "ranAt": "2026-07-25T00:51:33.507Z",
     "ok": true
   },
   {
     "employer": "stryker",
     "jobCount": 1142,
-    "ranAt": "2026-07-25T00:13:37.348Z",
+    "ranAt": "2026-07-25T00:52:07.211Z",
     "ok": true
   },
   {
     "employer": "terminix",
     "jobCount": 177,
-    "ranAt": "2026-07-24T22:00:02.423Z",
+    "ranAt": "2026-07-25T00:53:47.076Z",
     "ok": true
   }
 ]
