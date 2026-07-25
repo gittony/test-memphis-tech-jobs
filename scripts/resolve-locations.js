@@ -8,19 +8,23 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { classify, matchesMemphisArea } from "../lib/filter.js";
-import { fetchMedtronicJobDetail, JOB_BASE_URL } from "./fetch-medtronic.js";
+import { fetchWorkdayJobDetail, jobBaseUrl } from "../lib/workday.js";
+import { WORKDAY_EMPLOYERS } from "../lib/workday-employers.js";
+
+const WORKDAY_BY_COMPANY = new Map(WORKDAY_EMPLOYERS.map((e) => [e.company, e]));
 
 export async function resolveUncertainLocations(uncertainJobs, { log = () => {} } = {}) {
   const results = { pass: [], fail: [], stillUncertain: [] };
 
   for (const job of uncertainJobs) {
-    if (job.sourceAts !== "workday" || job.company !== "Medtronic") {
-      results.stillUncertain.push(job); // no detail-fetch logic for this source yet
+    const employer = job.sourceAts === "workday" ? WORKDAY_BY_COMPANY.get(job.company) : null;
+    if (!employer) {
+      results.stillUncertain.push(job); // no detail-fetch logic for this source/employer yet
       continue;
     }
 
-    const externalPath = job.url.slice(JOB_BASE_URL.length);
-    const detail = await fetchMedtronicJobDetail(externalPath);
+    const externalPath = job.url.slice(jobBaseUrl(employer).length);
+    const detail = await fetchWorkdayJobDetail({ ...employer, externalPath });
     const allLocations = [detail.location, ...(detail.additionalLocations ?? [])].filter(Boolean);
     const anyMemphis = allLocations.some((loc) => matchesMemphisArea(loc));
 

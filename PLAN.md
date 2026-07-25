@@ -372,10 +372,10 @@ Changed files:
 2. Temporarily swapped in a fabricated unhealthy entry (`ok: false`, "returned 0 jobs, previously had 1129") and confirmed `check-scraper-health.js --dry-run` printed the exact issue title and body it would have filed, then restored the real health file afterward.
 
 **How to verify yourself:**
-1. Run `node scripts/run-medtronic.js` — check `data/scraper-health.json` shows `"employer": "medtronic", "ok": true`.
+1. Run `node scripts/run-workday-employer.js medtronic` (Phase 9 renamed/generalized this from `run-medtronic.js` — see below) — check `data/scraper-health.json` shows `"employer": "medtronic", "ok": true`.
 2. Run `node scripts/check-scraper-health.js --dry-run` — should print `All scrapers healthy.`
 3. To see the alert path without waiting for a real failure: back up `data/scraper-health.json`, overwrite it with an entry that has `"ok": false` and an `"error"` string, run `node scripts/check-scraper-health.js --dry-run` again — it should print the issue title/body it would file — then restore the backup.
-4. Once this is pushed and run for real in Actions (no `--dry-run`), you can deliberately verify the live path by breaking `fetch-medtronic.js`'s URL temporarily, triggering the workflow, watching a real Issue appear in the **Issues** tab, then reverting and confirming the next run closes it.
+4. Once this is pushed and run for real in Actions (no `--dry-run`), you can deliberately verify the live path by breaking an employer's tenant/site config temporarily, triggering the workflow, watching a real Issue appear in the **Issues** tab, then reverting and confirming the next run closes it.
 
 ---
 
@@ -387,6 +387,35 @@ Changed files:
 
 **Done when:**
 - All 30 employers are integrated, the site reflects real postings from all of them, and Phase 8's monitoring is watching all 30.
+
+**This is too big to do as one block.** Being tackled in slices, same one-thing-at-a-time approach as every other phase — first slice below, ATS types remaining after that: iCIMS (Baptist Memorial, Orgill, Memphis-Shelby County Schools), Taleo (UTHSC, MLGW), Oracle Recruiting Cloud (AutoZone, University of Memphis, International Paper, Shelby County Government), NEOGOV (City of Memphis), then the niche single-vendor sites (Helena Agri/ADP RTI, MicroPort/UKG, Buckman/Jobvite, Mueller/Dayforce), and finally the unclear/conversational ones (TruGreen, First Horizon, IMC, FedEx).
+
+### Slice 1: Workday employers — built and verified
+
+Refactored the Medtronic-only Phase 1 code into a reusable Workday client, since ~10 more employers all run on the same undocumented CXS API:
+- `lib/workday.js` — `fetchWorkdayJobs(employer)` / `fetchWorkdayJobDetail(...)`, generalized from `fetch-medtronic.js` (host/tenant/site/company are now parameters, not hardcoded strings). Also adds a 20-second timeout to every request (see bug below).
+- `lib/workday-employers.js` — the config table. Adding an employer is now just one object in this array — everything downstream (scraping, storage, location resolution, monitoring) picks it up automatically.
+- `lib/run-workday-employer.js` — the shared "scrape one employer" logic (fetch → merge → record health), used by both a single-employer CLI (`scripts/run-workday-employer.js <key>`, handy for local testing) and the loop that runs every configured Workday employer (`scripts/run-all-workday.js`, what the daily workflow actually calls).
+- `scripts/resolve-locations.js` — generalized the same way: it now looks up the right tenant/site by the job's `company` field instead of special-casing Medtronic, so the free "N Locations" resolver works for every Workday employer, not just one.
+- Retired `scripts/fetch-medtronic.js` and `scripts/run-medtronic.js` — fully superseded, no callers left.
+- `.github/workflows/daily-pipeline.yml` — the "Fetch Medtronic postings" step became "Fetch Workday employers" (`node scripts/run-all-workday.js`). Adding employer #12+ later needs zero workflow changes, Workday or not — only ATS types genuinely new to the pipeline (iCIMS, Taleo, etc.) will need a new step.
+
+**Two real bugs found while scaling to multiple employers — both fixed:**
+
+1. **Cross-employer expiry bug (would have silently broken every employer once a second one existed).** `mergeJobs()` marks any stored job missing from the current `fresh` batch as one run closer to expiring. That's correct when one scraper run always covers *every* job in the store (true with only Medtronic), but with each employer scraped by its own separate run, every other employer's jobs would look "missing" from a run that was never responsible for them — silently expiring all of them within 2 days. Fixed by adding a `scope` filter to `mergeJobs(existing, fresh, { now, scope })`: only jobs `scope` says belong to the employer currently running can accrue a missed run or expire; every other employer's jobs are left untouched. Added a dedicated regression test to `scripts/verify-expiry.js` proving a scoped merge for "Acme Co" doesn't touch "Other Co"'s postings, and verified it against real data too (ran Medtronic and St. Jude back-to-back — both reported the same unchanged counts, neither touched the other).
+2. **No timeout on any Workday `fetch()` call.** One tenant (Smith & Nephew) stalled a real run for 20+ minutes with zero CPU activity — a plain network hang, not an error. Left unfixed, this would eventually hang a GitHub Actions job (burning CI minutes) and block every employer queued behind it in the sequential loop. Fixed with `signal: AbortSignal.timeout(20_000)` on both the search and detail requests in `lib/workday.js`.
+
+**A real location-format bug, also found at scale:** `matchesMemphisArea()` only matched the spelled-out state name ("Memphis, **Tennessee**"), so a genuinely Memphis-based Sedgwick posting ("Memphis, **TN**") was being excluded — some employers' ATS instances format state as the two-letter postal code instead of the full name. Fixed by also accepting a word-boundaried `\btn\b` match alongside the full "tennessee" check in `lib/filter.js` (word-boundaried specifically so it can't match "tn" as a stray substring of an unrelated word).
+
+**Confirmed working, 10 of 11 employers:** St. Jude, ALSAC, Sedgwick, Stryker, Evernorth (Cigna), Rentokil Terminix, Raymond James, Methodist Le Bonheur, Smith & Nephew, plus Medtronic. Running all of them roughly quadrupled the stored dataset (1,131 → 4,822 raw postings) and took the final Memphis tech listings from 2 to **13** — real postings now showing from ALSAC, Sedgwick, Smith & Nephew, and St. Jude in addition to Medtronic.
+
+**Known gap: Mid-America Apartment Communities (MAA).** Confirmed tenant/site are correct (`maa`/`MAA` — verified directly against the site's own embedded config), but the `/jobs` search endpoint consistently returns an empty-bodied `HTTP_400` straight from Workday's own application server (not a CDN/WAF block — confirmed via response headers), regardless of request body shape, headers, or an established session cookie. Recorded as `ok: false` in `data/scraper-health.json` with the real error, so Phase 8's monitoring will correctly flag it once this runs live rather than silently pretending MAA has zero jobs. Needs a closer look (possibly a nonstandard Workday API version for this tenant) before it can be added for real — parked rather than spending unbounded time on one employer.
+
+**How to verify yourself:**
+1. Run `node scripts/run-all-workday.js` — should print one line per employer; 10 should succeed, MAA should print `Mid-America Apartment Communities scraper failed: Workday API returned 400 at offset 0 (maa/MAA)`.
+2. Run `node scripts/verify-expiry.js` — should print 7 `ok -` lines including the new "scoped merge" check, ending in `All expiry logic checks passed.`
+3. Run `node scripts/build-listings.js` then `node scripts/build-site.js` then `node scripts/serve.js`, open `http://localhost:8080` — should show 13 postings across St. Jude, Medtronic, Sedgwick, Smith & Nephew, and ALSAC.
+4. Check `data/scraper-health.json` — 10 entries with `"ok": true`, one (`maa`) with `"ok": false` and a real error message.
 
 ---
 

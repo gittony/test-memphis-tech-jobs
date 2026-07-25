@@ -29,9 +29,9 @@ jobs:
 
       - run: npm ci
 
-      - name: Fetch Medtronic postings
-        run: node scripts/run-medtronic.js
-        continue-on-error: true # one broken scraper shouldn't block the rest of the pipeline
+      - name: Fetch Workday employers
+        run: node scripts/run-all-workday.js
+        continue-on-error: true # one broken employer shouldn't block the rest of the pipeline
 
       - name: Classify and enrich
         run: node scripts/build-listings.js
