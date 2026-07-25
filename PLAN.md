@@ -458,6 +458,31 @@ Also worth knowing: the exact same Medtronic posting (`Security Engineering Mana
 
 ---
 
+## Branch protection for `main`
+
+Not a numbered phase — an operational/process change layered on top of everything above, added once the project had enough real history to be worth protecting against an unreviewed bad change landing directly on `main`.
+
+**What's set up:**
+- A GitHub ruleset on `main` requiring at least 1 approving review before merging any pull request.
+- **Bypass role: Repository admin.** This is what lets the daily automated data-refresh commit keep pushing straight to `main` without a PR — gating a machine-generated commit that runs unattended every morning behind manual approval would mean the site simply stops updating unless someone approves a PR at 5-6am daily, which defeats the point of automating it.
+- `gh` CLI installed and authenticated (`gh auth login`), so pull requests can be opened directly from this session instead of you having to click GitHub's "Compare & pull request" banner manually each time.
+
+**Real, worth-knowing consequence of the bypass choice:** "Repository admin" bypass applies to *any* push authenticated as an admin-role account — not just the automated commit's PAT. Since Claude has been pushing to `main` using your own git credentials all along, and you're the repo admin, **Claude's own direct pushes also bypass the PR requirement** — GitHub doesn't distinguish "the daily bot" from "you (or Claude acting as you) pushing code directly." Decided explicitly: this is fine as *discipline, not enforcement* — going forward, Claude will voluntarily push code changes to a branch and open a PR for your review rather than committing straight to `main`, even though the ruleset itself wouldn't technically stop a direct push. If stricter, GitHub-enforced separation is ever wanted (even your own/Claude's direct pushes blocked without a PR), that needs a genuinely separate lower-privileged identity (e.g., a second account or machine user with Write-only access) holding the automation's PAT instead of an admin account — more setup, not done here.
+
+**How the daily commit authenticates:** `.github/workflows/daily-pipeline.yml`'s checkout step now passes `token: ${{ secrets.GH_PUSH_TOKEN }}` — a fine-grained PAT (Contents: Read and write, scoped to just this repo) belonging to the admin account, stored as a repo secret. The default `GITHUB_TOKEN` can no longer push to `main` on its own now that the ruleset is active.
+
+**A real near-miss during setup, worth remembering:** the first PAT created got pasted into an editor tab visible in this session before being added as the secret — meaning it was exposed outside GitHub's own secret storage. Treated as compromised immediately: revoked via `github.com/settings/tokens?type=beta`, and a fresh token was generated and used instead, without ever appearing in chat/logs again. General rule going forward: token values get typed straight into GitHub's own secret field, never into a shared editor, terminal echo, or chat.
+
+**Verified working end-to-end:** merged a real PR (#2, adding the `GH_PUSH_TOKEN` change itself) using GitHub's "merge without waiting for requirements to be met" bypass option (needed since GitHub never allows self-approval, even for admins — a hard platform rule, not a config issue), then manually triggered the workflow via `gh workflow run`. Full run went green, and critically, the "Commit updated data" step produced a real `Automated data refresh` commit that landed on `origin/main` — confirming the new token genuinely bypasses the PR requirement for that one step while the rule stays enforced for everything else.
+
+**How to verify yourself:**
+1. `github.com/gittony/test-memphis-tech-jobs/settings/rules/rulesets` — the ruleset should show "Require a pull request before merging" active, with Repository admin in the bypass list.
+2. Try pushing a throwaway branch + PR from an account *without* admin/write access (or just note that any future collaborator without write access would be blocked) to confirm the rule actually applies to non-bypassed accounts.
+3. Check `github.com/gittony/test-memphis-tech-jobs/settings/secrets/actions` for `GH_PUSH_TOKEN` — should exist; its value is never visible again once saved.
+4. Trigger the workflow manually and confirm the "Commit updated data" step succeeds and a new commit appears on `main` afterward.
+
+---
+
 ## Open questions log
 
 Running list of things surfaced mid-project that don't fit neatly into a single phase above:
