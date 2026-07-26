@@ -43,6 +43,10 @@ jobs:
         run: node scripts/run-all-icims.js
         continue-on-error: true
 
+      - name: Fetch Oracle Recruiting Cloud employers
+        run: node scripts/run-all-oracle-recruiting.js
+        continue-on-error: true
+
       - name: Classify and enrich
         run: node scripts/build-listings.js
         env:
