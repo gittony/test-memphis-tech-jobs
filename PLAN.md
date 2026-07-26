@@ -504,6 +504,28 @@ New files:
 2. Run `node scripts/build-listings.js` — should add exactly 5 new Hilton postings to `data/listings.json`, all `"matchedVia": "rules"` with real `postedOnDate` values and `"postedOnApprox": false`.
 3. Check `data/jobs.json` for `"sourceAts": "oracle-recruiting"` entries — every one should have a `location` string containing `Memphis, TN`.
 
+### Slice 4: UKG Pro (UltiPro) — First Horizon (built and verified, first employer on this ATS)
+
+First Horizon was on Phase 0's original 30-employer list, but marked low-confidence and unconfirmed (`SuccessFactors (probable)`) — parked in the hardest tier alongside TruGreen's chat UI and FedEx's unconfirmed backend, since automated research at the time hit fetch errors and couldn't independently confirm anything. You asked directly why no First Horizon postings were showing up; a fresh live investigation found the earlier guess was wrong, and the real answer is much easier than "hardest tier" suggested.
+
+**What live investigation found:** the real ATS is **UKG Pro (UltiPro)** — the same family already used by MicroPort Orthopedics — not SuccessFactors. The public job board itself is a Knockout.js SPA (job data isn't in the raw HTML, ruling out a Workday/iCIMS-style plain scrape), but it loads results from a clean, unauthenticated JSON endpoint found by reading the page's own list of AJAX URLs: `POST recruiting.ultipro.com/{companyCode}/JobBoard/{boardId}/JobBoardView/LoadSearchResults`. No headless browser needed, despite Phase 0's original "JS-heavy portal" classification for this ATS family. Confirmed live: no enforced page-size cap up to `Top: 500`, and First Horizon's total posting count (233) is small enough to fetch everything and filter client-side — no Oracle-style server-side location facet needed.
+
+The response data is arguably cleaner than any ATS integrated so far: a real per-location `Address.City`/`Address.State.Name` breakdown (no free-text parsing needed the way Workday's `locationsText` requires), an exact `PostedDate` (a full ISO timestamp, trimmed to `YYYY-MM-DD` — `lib/posted-date.js`'s exact-date passthrough from Slice 3 already handles it, no changes needed there), and a `BriefDescription` plain-text summary included at zero extra request cost, the same free-at-scrape-time shape as Oracle's `ShortDescriptionStr`.
+
+New files:
+- `lib/ultipro.js` — `fetchUltiproJobs(employer)`, pages via `Top`/`Skip` (page size 50, politely, despite the confirmed lack of a server-side cap). `normalize()` joins each posting's `Locations[]` into a `"City, State; City, State"` string, matching the multi-location join pattern Oracle's client already established.
+- `lib/ultipro-employers.js` — config table: `host` (shared pod, `recruiting.ultipro.com`), plus per-employer `companyCode`/`boardId`.
+- `lib/run-ultipro-employer.js`, `scripts/run-ultipro-employer.js` (single-employer CLI), `scripts/run-all-ultipro.js` (the loop the workflow calls) — directly mirror the Workday/iCIMS/Oracle equivalents.
+- `.github/workflows/daily-pipeline.yml` — added a "Fetch UltiPro employers" step, same `continue-on-error: true` pattern.
+- `scripts/build-job-pages.js` — the "description already on the record" branch (previously Oracle-only) now also covers `sourceAts === "ultipro"`, since `BriefDescription` is captured free at scrape time exactly like Oracle's summary.
+
+**Result:** all 233 First Horizon postings fetched in one run. **2 passed** the tech-role title filter — Senior Manager Software Engineering (multi-location, including Memphis, Tennessee) and IT Developer Senior (Full Stack .Net Developer - Wealth) (Memphis, Tennessee) — both resolved directly by the rule-based filter, no AI review needed. The other 231 (relationship bankers, branch managers, tax/finance analysts, etc.) correctly failed on title — First Horizon is a regional bank, overwhelmingly non-technical roles, same pattern as every other employer here.
+
+**How to verify yourself:**
+1. Run `node scripts/run-ultipro-employer.js firsthorizon` — should print `First Horizon: 233 new, 0 updated, 0 unchanged` on a fresh run.
+2. Run `node scripts/build-listings.js` — should add exactly 2 new First Horizon postings to `data/listings.json`, both `"matchedVia": "rules"`.
+3. Check `data/jobs.json` for `"sourceAts": "ultipro"` entries — every one should have a `description` field already populated (no separate detail fetch needed).
+
 ---
 
 ## Branch protection for `main`

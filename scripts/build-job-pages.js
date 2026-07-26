@@ -44,11 +44,12 @@ function removeStalePages(currentSlugs) {
   return removed;
 }
 
-// Returns { text, isPlainText } | null. Oracle's description is already on
-// the record (captured free at scrape time); Workday/iCIMS need a per-job
-// detail fetch, wrapped so a failure degrades that one page, not the run.
+// Returns { text, isPlainText } | null. Oracle and UltiPro's descriptions
+// are already on the record (captured free at scrape time, plain text for
+// both); Workday/iCIMS need a per-job detail fetch, wrapped so a failure
+// degrades that one page, not the run.
 async function fetchDescription(listing) {
-  if (listing.sourceAts === "oracle-recruiting") {
+  if (listing.sourceAts === "oracle-recruiting" || listing.sourceAts === "ultipro") {
     return listing.description ? { text: listing.description, isPlainText: true } : null;
   }
 
