@@ -2,80 +2,80 @@
   {
     "employer": "alsac",
     "jobCount": 16,
-    "ranAt": "2026-07-25T23:45:05.749Z",
+    "ranAt": "2026-07-26T12:10:33.482Z",
     "ok": true
   },
   {
     "employer": "evernorth",
     "jobCount": 510,
-    "ranAt": "2026-07-25T23:46:31.293Z",
+    "ranAt": "2026-07-26T12:11:49.882Z",
     "ok": true
   },
   {
     "employer": "hilton",
     "jobCount": 16,
-    "ranAt": "2026-07-26T00:11:23.916Z",
+    "ranAt": "2026-07-26T12:13:18.955Z",
     "ok": true
   },
   {
     "employer": "maa",
     "jobCount": 0,
-    "ranAt": "2026-07-25T23:46:58.878Z",
+    "ranAt": "2026-07-26T12:12:18.268Z",
     "ok": false,
     "error": "Workday API returned 400 at offset 0 (maa/MAA)"
   },
   {
     "employer": "medtronic",
-    "jobCount": 1094,
-    "ranAt": "2026-07-25T23:43:43.907Z",
+    "jobCount": 1084,
+    "ranAt": "2026-07-26T12:09:15.917Z",
     "ok": true
   },
   {
     "employer": "methodist",
-    "jobCount": 615,
-    "ranAt": "2026-07-25T23:47:23.354Z",
+    "jobCount": 616,
+    "ranAt": "2026-07-26T12:12:41.624Z",
     "ok": true
   },
   {
     "employer": "mscs-central",
     "jobCount": 27,
-    "ranAt": "2026-07-25T23:47:59.255Z",
+    "ranAt": "2026-07-26T12:13:17.759Z",
     "ok": true
   },
   {
     "employer": "raymondjames",
     "jobCount": 335,
-    "ranAt": "2026-07-25T23:47:08.615Z",
+    "ranAt": "2026-07-26T12:12:26.727Z",
     "ok": true
   },
   {
     "employer": "sedgwick",
     "jobCount": 544,
-    "ranAt": "2026-07-25T23:45:06.424Z",
+    "ranAt": "2026-07-26T12:10:33.962Z",
     "ok": true
   },
   {
     "employer": "smithnephew",
     "jobCount": 378,
-    "ranAt": "2026-07-25T23:47:41.405Z",
+    "ranAt": "2026-07-26T12:13:00.143Z",
     "ok": true
   },
   {
     "employer": "stjude",
-    "jobCount": 169,
-    "ranAt": "2026-07-25T23:44:58.189Z",
+    "jobCount": 168,
+    "ranAt": "2026-07-26T12:10:26.606Z",
     "ok": true
   },
   {
     "employer": "stryker",
     "jobCount": 1142,
-    "ranAt": "2026-07-25T23:45:31.202Z",
+    "ranAt": "2026-07-26T12:10:56.665Z",
     "ok": true
   },
   {
     "employer": "terminix",
     "jobCount": 177,
-    "ranAt": "2026-07-25T23:47:00.700Z",
+    "ranAt": "2026-07-26T12:12:19.839Z",
     "ok": true
   }
 ]
