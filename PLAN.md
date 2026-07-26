@@ -456,6 +456,29 @@ Also worth knowing: the exact same Medtronic posting (`Security Engineering Mana
 2. If a posting needs AI review, check `data/ai-log.jsonl` — it should now gain a new line every real run, not just via `enrich-uncertain.js --smoke-test`.
 3. Trigger the workflow manually (Actions tab → Run workflow) to confirm the full chain — fetch, classify, build, commit, health check, deploy — completes end to end now.
 
+### Slice 3: Oracle Recruiting Cloud — Hilton (built and verified, first employer on this ATS)
+
+Hilton wasn't on Phase 0's original 30-employer list — added later once you confirmed Hilton has a corporate office in Memphis, the same "located here, not just posted by a company headquartered here" bar the whole project applies. Its careers site (`jobs.hilton.com`) turned out to run on **Oracle Recruiting Cloud**, an ATS type Phase 0 had already flagged as upcoming (for AutoZone, University of Memphis, International Paper, Shelby County Government) but nobody had built a client for yet — so this is also the first Oracle Recruiting Cloud scraper in the codebase, not just a new config row.
+
+**How Oracle Recruiting Cloud differs from Workday/iCIMS, and why the client is shaped differently:**
+- It's one shared Oracle Fusion pod per region (Hilton's is `efet.fa.us2.oraclecloud.com`, site number `CX_1009` — found by following the `CX_1` redirect embedded in `jobs.hilton.com`'s page source to the real site number) hosting a single company's postings behind a documented-feeling but unofficial REST endpoint: `/hcmRestApi/resources/latest/recruitingCEJobRequisitions`.
+- Unlike every employer so far, Hilton is a global hospitality company with **3,971 total open postings** — orders of magnitude past any other employer here, and fetch-everything-then-filter-client-side (the Workday/iCIMS approach) would be both wasteful and slow. Instead, the client asks Oracle's own location facet to pre-filter server-side to one geography, via a `selectedLocationsFacet=<GeographyId>` finder parameter — discovered by watching what the site's own "filter by location" UI sends. That GeographyId (`300000003889994` for "Memphis, TN, United States") is scoped to Hilton's specific Oracle Fusion tenant, not a stable/global Oracle ID, so it's stored per-employer in the config rather than hardcoded in the client — the next Oracle Recruiting Cloud employer will need its own value found the same way.
+- Oracle's search results already carry the full primary + secondary location list per posting up front — no Workday-style separate detail-fetch needed to resolve "N Locations" ambiguity; `normalize()` just joins them into one location string (e.g. `"McLean, VA, United States; Dallas, TX, United States; Memphis, TN, United States"`), which flows straight into the existing `matchesMemphisArea()` check with zero new filtering logic needed.
+- Oracle also exposes a **real, exact `PostedDate`** (`"2026-07-24"`) — better data than Workday's relative-text-only postings. `lib/posted-date.js` (previously Workday-only, despite its generic-sounding name) now recognizes an already-exact `YYYY-MM-DD` string and passes it through as `approx: false`, instead of only knowing how to estimate from "Posted N Days Ago" text.
+
+New files:
+- `lib/oracle-recruiting.js` — `fetchOracleRecruitingJobs(employer)`, pages via the finder string's own `offset`/`limit` (confirmed the `expand=requisitionList.secondaryLocations` query param is required — omitting it silently drops `requisitionList` from the response entirely, even at small page sizes, which looked at first like a broken endpoint).
+- `lib/oracle-recruiting-employers.js` — config table, same shape as Workday/iCIMS's, plus the per-tenant `memphisLocationFacetId`.
+- `lib/run-oracle-recruiting-employer.js`, `scripts/run-oracle-recruiting-employer.js` (single-employer CLI), `scripts/run-all-oracle-recruiting.js` (the loop the workflow calls) — directly mirror the Workday/iCIMS equivalents, including the same scoped-merge and scraper-health recording.
+- `.github/workflows/daily-pipeline.yml` — added a "Fetch Oracle Recruiting Cloud employers" step, same `continue-on-error: true` pattern.
+
+**Result:** 16 Memphis-area Hilton postings fetched (Oracle's own location facet already excluded the other ~3,955). Of those, **5 passed** the existing tech-role title filter with no AI review needed — Senior Software Engineer (Content Management System), Lead Software Engineer - Frontend, Lead Full-stack Software Engineer (PHP and React), Manager Software Engineering, and Senior Manager Data Architecture — all with exact posted dates and working job URLs (`https://efet.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1009/job/{id}`). The other 11 (tax analysts, hotel accounting, project management, etc.) correctly failed on title — a hospitality corporate office has plenty of non-tech roles too, same as every other employer here.
+
+**How to verify yourself:**
+1. Run `node scripts/run-oracle-recruiting-employer.js hilton` — should print `Hilton: 16 new, 0 updated, 0 unchanged` on a fresh run.
+2. Run `node scripts/build-listings.js` — should add exactly 5 new Hilton postings to `data/listings.json`, all `"matchedVia": "rules"` with real `postedOnDate` values and `"postedOnApprox": false`.
+3. Check `data/jobs.json` for `"sourceAts": "oracle-recruiting"` entries — every one should have a `location` string containing `Memphis, TN`.
+
 ---
 
 ## Branch protection for `main`
