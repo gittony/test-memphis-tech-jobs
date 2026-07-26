@@ -7,6 +7,16 @@ const lastUpdated = document.getElementById("last-updated");
 
 let listings = [];
 
+// Same transform as lib/slug.js — duplicated because this site has no build
+// step or bundler to share a Node module with the browser.
+function slugifyJobId(id) {
+  return id
+    .replace(/:/g, "-")
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 function displayPostedDate(job) {
   if (!job.postedOnDate) return null;
   const formatted = new Date(`${job.postedOnDate}T00:00:00Z`).toLocaleDateString("en-US", {
@@ -48,9 +58,7 @@ function render(filtered) {
     const h2 = document.createElement("h2");
     h2.className = "listing-title";
     const link = document.createElement("a");
-    link.href = /^https?:\/\//i.test(job.url) ? job.url : "#";
-    link.target = "_blank";
-    link.rel = "noopener";
+    link.href = `./job/${slugifyJobId(job.id)}/`;
     link.textContent = job.title;
     h2.appendChild(link);
 

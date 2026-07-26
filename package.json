@@ -7,6 +7,7 @@
   "scripts": {},
   "license": "UNLICENSED",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0"
+    "@anthropic-ai/sdk": "^0.115.0",
+    "sanitize-html": "^2.17.6"
   }
 }

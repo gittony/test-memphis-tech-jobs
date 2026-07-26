@@ -270,6 +270,31 @@ New pieces:
 
 **Addendum (post-Phase 9): real posted dates instead of relative text.** Workday's search API only ever gives us relative text ("Posted Today," "Posted 11 Days Ago," "Posted 30+ Days Ago") — no actual date field. `lib/posted-date.js` converts that into a real calendar date using the moment each posting was scraped (`lastSeenAt`) as the reference point, since the relative text was accurate as of that scrape. `build-listings.js` computes `postedOnDate`/`postedOnApprox` once for every listing; `site/app.js` displays "Posted July 25, 2026" normally, or "Posted before June 25, 2026" when the source bucket was the capped "30+ Days Ago" (honest about the fact that we only know a lower bound there, not an exact day). Verified with a real screenshot showing both cases rendering correctly.
 
+**Addendum (post-Phase 9): a real page per job, at `/job/{id}/`, instead of linking straight out.** Listing cards used to link directly to the original ATS posting. Investigation found the three ATS sources aren't equally capable of supplying a description for a detail page:
+- **Workday** already has a per-job detail endpoint (`fetchWorkdayJobDetail`, previously only used to resolve ambiguous "N Locations" text) that returns a real HTML `jobDescription`.
+- **iCIMS** has no detail endpoint, but a job's own URL (already stored as `job.url`) returns server-rendered HTML — though the description isn't one contiguous block, it's split across one `<div class="iCIMS_Expandable_Text">` per section (Summary, Essential Job Functions, Qualifications, etc.); a naive "next sibling class name" boundary search doesn't work, since chrome class names like `iCIMS_InfoMsg` also appear *inside* the real content.
+- **Oracle Recruiting Cloud** (Hilton) only exposes a short (~500 char) plain-text `ShortDescriptionStr`, already present in the search response at zero extra cost — the real job page is a client-rendered SPA with no server-rendered body, so nothing more is realistically obtainable.
+
+Given that gap, and to limit copyright/reuse exposure from reproducing scraped content, the detail page shows a short **excerpt** (sanitized, ~600 visible characters, truncated at a block or word boundary) plus a prominent link back to the original posting — not full verbatim reproduction. This also papers over the Oracle gap gracefully: its "excerpt" is just its already-short summary.
+
+New pieces:
+- `lib/icims.js` — added `fetchIcimsJobDescription(jobUrl)`, extracting and joining every `iCIMS_Expandable_Text` block (verified against a real MSCS posting).
+- `lib/oracle-recruiting.js` — `normalize()` now also captures `ShortDescriptionStr` as `description`, free at scrape time.
+- `lib/sanitize-description.js` — new dependency `sanitize-html` (nothing sanitization-capable existed before; raw scraped HTML can't safely go straight into a page). Strips to a conservative tag allowlist with zero attributes (no links/images/scripts/iframes/inline styles survive), drops empty/whitespace-only `<p>` tags (Workday's source HTML is full of these, used for spacing in the original CMS), and truncates at a block boundary so cuts never land mid-tag.
+- `lib/render-job-page.js` — the page template; escapes plain-text fields (title/company/location/date) separately from the pre-sanitized excerpt, matching the same untrusted-content posture `site/app.js` already established for the list view.
+- `lib/slug.js` — turns a job id like `workday:medtronic:R71386` into a URL-safe `workday-medtronic-R71386` path segment. Duplicated verbatim as a small inline function in `site/app.js`, since the site has no build step to share a Node module with the browser.
+- `scripts/build-job-pages.js` — new standalone script (same one-script-per-phase shape as `build-listings.js`/`build-site.js`), run between them in the workflow. Only fetches descriptions for postings that already pass `classify()` (today: 18 of ~4,900+ raw postings) — not at scrape time — and deletes any `site/job/` subdirectory no longer in the current listings before regenerating everything fresh, so expired jobs' pages don't linger forever at live URLs.
+- `scripts/serve.js` — fixed to resolve directory requests (e.g. `/job/{slug}/`) to that directory's `index.html`, the same way GitHub Pages does automatically but the local preview server didn't.
+- `site/app.js` — listing card titles now link to the internal `/job/{slug}/` page instead of straight to the external posting; the outbound link moved to the detail page's "View original posting" button.
+
+**Failure handling** mirrors the exact pattern from `resolve-locations.js` (and the Phase 9 incident where an unhandled Workday 403 once crashed the whole pipeline): every per-job fetch is wrapped in try/catch, logs, and falls through — never throws out of the loop. A failed fetch renders "Full description unavailable — view the original posting for full details," with the outbound link still present regardless (it's built purely from `listing.url`).
+
+**How to verify yourself:**
+1. Run `node scripts/build-listings.js`, then `node scripts/build-job-pages.js`, then `node scripts/build-site.js`, then `node scripts/serve.js`.
+2. Open `http://localhost:8080`, click a listing title — should land on `/job/{slug}/`, not the external site.
+3. That page should show title/company/location/posted date, a sanitized excerpt (or the fallback message), a working "View original posting" link, and a working "Back to all postings" link.
+4. Sanity-check the sanitizer: `node -e 'import("./lib/sanitize-description.js").then(({sanitizeAndExcerpt}) => console.log(sanitizeAndExcerpt("<script>alert(1)</script><img src=x onerror=alert(1)><p>Real text.</p>").excerptHtml))'` — output should be exactly `<p>Real text.</p>`, no script/img survives.
+
 ---
 
 ## Phase 6 — Expiry logic

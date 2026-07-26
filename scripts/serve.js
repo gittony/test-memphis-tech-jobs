@@ -19,8 +19,12 @@ const CONTENT_TYPES = {
 };
 
 const server = createServer(async (req, res) => {
-  const path = req.url === "/" ? "/index.html" : req.url;
-  const filePath = join(SITE_DIR, decodeURIComponent(path.split("?")[0]));
+  // GitHub Pages resolves a directory request (e.g. /job/{slug}/) to that
+  // directory's index.html automatically; this server needs to do the same
+  // explicitly, not just for "/", now that site/job/**/index.html exists.
+  let path = req.url.split("?")[0];
+  if (path.endsWith("/")) path += "index.html";
+  const filePath = join(SITE_DIR, decodeURIComponent(path));
 
   try {
     const body = await readFile(filePath);
