@@ -566,6 +566,20 @@ Went after both remaining Phase 0 "Taleo" employers together. One turned out to 
 2. Confirm `ut.taleo.net` is genuinely dead: `curl -v https://ut.taleo.net` should fail to resolve.
 3. Confirm MLGW's blocker is real: `curl -X POST "https://mlgw.taleo.net/careersection/rest/jobboard/searchjobs?lang=en&portal=8116756061" -H "Content-Type: application/json" -d '{}'` returns `500`; the identical request from a real browser (or Playwright) succeeds.
 
+### Slice 7: a real fetch-step hang, and closing the gap it exposed in Phase 8's monitoring
+
+The Workday fetch step ran for over an hour on 2026-07-27 before being cancelled by hand — normal end-to-end pipeline runs take 4-5 minutes total. The step's log showed **zero output** for its entire runtime: not even the first employer's (Medtronic's) completion line, which `runWorkdayEmployer` logs on every single run, success or failure. That means the very first request hung completely before the per-request `AbortSignal.timeout(20_000)` in `lib/workday.js` ever fired — the exact protection added after an earlier, similar stall (documented in that file's own comment). A single incident isn't enough to pin down root cause with certainty; it looks like a GitHub-hosted-runner-level network stall, not a bug in the request logic, since nothing else was competing for the event loop and the timer itself never ran.
+
+That incident exposed a real gap in Phase 8's monitoring: a step that hangs gets killed before the scraper script ever writes anything to `data/scraper-health.json` for the employer it was stuck on — so from that file's perspective, a silent multi-hour hang and a perfectly healthy day can look identical. Two changes close this:
+
+- **`timeout-minutes: 10` added to all four ATS fetch steps** in `daily-pipeline.yml` — a hard, GitHub-Actions-level backstop that doesn't depend on anything inside the Node process still being able to run its own timeout logic. 10 minutes is generously above the ~4-5 minute normal *total* pipeline time, so it won't false-positive on a merely-slow day.
+- **`scripts/record-step-outcomes.js`** (new) — runs right after the four fetch steps, reading each one's `steps.<id>.outcome` (passed in via env vars, since only the workflow itself knows whether a step was killed) and recording it as its own `data/scraper-health.json` entry (`workday-step`, `icims-step`, `oracle-recruiting-step`, `ultipro-step`). This deliberately reuses Phase 8's existing machinery rather than building a second notification path: a timed-out step now flows straight into the same "Scraper health alert" GitHub Issue that a broken employer already does, and closes itself the same way once a run comes back clean.
+
+**How to verify yourself:**
+1. `FETCH_WORKDAY_OUTCOME=failure FETCH_ICIMS_OUTCOME=success FETCH_ORACLE_OUTCOME=success FETCH_ULTIPRO_OUTCOME=cancelled node scripts/record-step-outcomes.js` then `node scripts/check-scraper-health.js --dry-run` — should list `workday-step` and `ultipro-step` as unhealthy with a clear "did not complete successfully" error, and print the issue body that would be filed. Then `git checkout -- data/scraper-health.json` to discard the test entries.
+2. `grep timeout-minutes .github/workflows/daily-pipeline.yml` — should show `10` on all four fetch steps.
+3. Next real scheduled run: check the Actions tab for the "Record fetch step outcomes" step's log — should print all four steps as healthy on a normal day.
+
 ---
 
 ## Branch protection for `main`
