@@ -547,6 +547,25 @@ With Oracle Recruiting Cloud (Slice 3) and UKG Pro/UltiPro (Slice 4) both alread
 2. Run `node scripts/build-listings.js` — should add exactly 4 new postings to `data/listings.json`.
 3. Check `data/scraper-health.json` — all five new employer keys (`autozone`, `uofm`, `internationalpaper`, `shelbycounty`, `microport`) should show `"ok": true`.
 
+### Slice 6: UTHSC — another Taleo→Oracle migration, and a genuine Taleo blocker at MLGW
+
+Went after both remaining Phase 0 "Taleo" employers together. One turned out to be another easy Oracle Recruiting Cloud config row; the other is the first real, unresolved blocker on a *new* ATS in this project (as opposed to MAA/Baptist Memorial, which blocked on an already-built ATS).
+
+**UTHSC — done, zero new code.** `ut.taleo.net` doesn't even resolve anymore (DNS failure) — same shape of surprise as Orgill's and First Horizon's stale Phase 0 guesses. The whole University of Tennessee system (Knoxville, Memphis, Chattanooga, all campuses together) has since moved to Oracle Recruiting Cloud, on yet another distinct regional pod (`fa-ewlq-saasfaprod1.fa.ocs.oraclecloud.com`). The Memphis location facet (`300000010468193`) correctly scopes the shared multi-campus tenant down to just UTHSC's campus — added as one more row in `lib/oracle-recruiting-employers.js`, no library code touched. **222 postings fetched, 0 pass the tech-role filter** — expected for a medical school's faculty/clinical postings, same non-bug pattern as MSCS in Slice 2.
+
+**MLGW — genuinely still on Taleo, and genuinely blocked.** Unlike every ATS integrated so far, Taleo's job search isn't a simple `fetch()`-able endpoint:
+- The visible job list is populated by an AJAX `POST /careersection/rest/jobboard/searchjobs` call — found by reading the page's own faceted-search JS modules (`SearchHandler.js`), not documented anywhere.
+- That endpoint requires a live session cookie (established by first loading the search page) *and* a per-session CSRF token, read out of an inline JS config block (`sessionCSRFToken: "..."`) and sent back as a `csrftoken` request header — real anti-automation friction none of the other four ATSes in this project have.
+- The POST body itself is assembled client-side from four separate JS panel modules (`FieldPanel`, `FilterPanel`, `AdvancedSearchPanel`, `SortPanel`), each contributing its own named key (`fieldData`, `filterSelectionParam`, `advancedSearchFiltersSelectionParam`, `sortingSelection`) to one combined JSON object — traced all four and reconstructed the shape by hand.
+- Even with the session cookie, CSRF token, and all four provider keys included, the endpoint still returns a generic `500 Internal Server Error` ("An Error Occurred in TEE") with no further detail — something in the exact payload is still wrong, and there's no more low-effort investigation left to try with a plain HTTP client.
+
+**Parked, not abandoned** — same call already made for MAA and Baptist Memorial: real effort was spent (this took meaningfully longer than any other employer in the project, Hilton included), the likely next step is a one-off headless-browser inspection (the same tool briefly installed just for MSCS's iCIMS iframe in Slice 2) to watch a real browser make this request and capture the exact payload, rather than guessing further blind. Recorded here rather than silently dropped so the reasoning isn't lost.
+
+**How to verify yourself:**
+1. Run `node scripts/run-oracle-recruiting-employer.js uthsc` — should print `University of Tennessee Health Science Center: 222 new, 0 updated, 0 unchanged` on a fresh run.
+2. Confirm `ut.taleo.net` is genuinely dead: `curl -v https://ut.taleo.net` should fail to resolve.
+3. Confirm MLGW's blocker is real, not a typo: `curl -X POST "https://mlgw.taleo.net/careersection/rest/jobboard/searchjobs?lang=en&portal=8116756061" -H "Content-Type: application/json" -d '{}'` should return `500` / "An Error Occurred in TEE" even with a well-formed body.
+
 ---
 
 ## Branch protection for `main`
