@@ -19,6 +19,7 @@ const STEPS = [
   { key: "icims-step", label: "iCIMS (entire step)", outcome: process.env.FETCH_ICIMS_OUTCOME },
   { key: "oracle-recruiting-step", label: "Oracle Recruiting Cloud (entire step)", outcome: process.env.FETCH_ORACLE_OUTCOME },
   { key: "ultipro-step", label: "UltiPro (entire step)", outcome: process.env.FETCH_ULTIPRO_OUTCOME },
+  { key: "neogov-step", label: "NEOGOV (entire step)", outcome: process.env.FETCH_NEOGOV_OUTCOME },
 ];
 
 const now = new Date().toISOString();

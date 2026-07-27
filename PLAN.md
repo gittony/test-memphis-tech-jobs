@@ -577,8 +577,26 @@ That incident exposed a real gap in Phase 8's monitoring: a step that hangs gets
 
 **How to verify yourself:**
 1. `FETCH_WORKDAY_OUTCOME=failure FETCH_ICIMS_OUTCOME=success FETCH_ORACLE_OUTCOME=success FETCH_ULTIPRO_OUTCOME=cancelled node scripts/record-step-outcomes.js` then `node scripts/check-scraper-health.js --dry-run` — should list `workday-step` and `ultipro-step` as unhealthy with a clear "did not complete successfully" error, and print the issue body that would be filed. Then `git checkout -- data/scraper-health.json` to discard the test entries.
-2. `grep timeout-minutes .github/workflows/daily-pipeline.yml` — should show `10` on all four fetch steps.
-3. Next real scheduled run: check the Actions tab for the "Record fetch step outcomes" step's log — should print all four steps as healthy on a normal day.
+2. `grep timeout-minutes .github/workflows/daily-pipeline.yml` — should show `10` on every fetch step (Slice 8 below added a fifth, NEOGOV).
+3. Next real scheduled run: check the Actions tab for the "Record fetch step outcomes" step's log — should print every step as healthy on a normal day.
+
+### Slice 8: City of Memphis (NEOGOV) — a real scraper that, today, is correct and finds zero jobs
+
+Went after this specifically because it was flagged as worth double-checking (a stray search hint earlier suggested it might have followed UTHSC/University of Memphis onto Oracle Recruiting Cloud). It hadn't — `governmentjobs.com/careers/memphistn` is still on NEOGOV, unchanged from Phase 0's triage.
+
+**The API isn't documented, but it's simpler than any ATS integrated so far.** The visible job list is populated by a plain `GET /careers/home/index?agency=memphistn&page=N` — found by reading the site's own Knockout-based search bundle JS (`AgencyPages/search`), same technique already used for Taleo's failed investigation and UltiPro's `LoadSearchResults` discovery. Unlike Taleo, though: **no session cookie, no Referer, no token of any kind is required** — a single cold `fetch()` with no prior request returns the exact same server-rendered HTML fragment a real browser gets. Confirmed by running the identical request with and without a warmed-up session across several attempts. The fragment includes a real plain-text description excerpt per job for free (no separate detail fetch needed), same free-description shape as Oracle/UltiPro — added to `scripts/build-job-pages.js`'s already-existing "description is already on the record" branch alongside those two.
+
+**The scraper is correct; City of Memphis genuinely has 0 open postings right now.** First pass returned "No jobs at this time" and, being suspicious of a possible request bug, this was checked three separate ways before trusting it: (1) the identical request mechanism against Nashville's NEOGOV site correctly returned 67 real, current postings — ruling out a broken request shape; (2) a web search for City of Memphis openings surfaced real-looking hits on this exact domain, including a specific job bulletin URL — which turned out, on inspection, to have closed back on **6/11/2018** (NEOGOV keeps old job-bulletin pages permanently reachable at their original URL, which is exactly what search engines had indexed); (3) repeated the live query several times with different User-Agents/cookies/headers, always the same "No jobs at this time" result. Web aggregators (Indeed, ZipRecruiter, CareersInGovernment) showing "government jobs in Memphis" are near-certainly picking up county/schools/other-agency postings and/or their own stale cache, not evidence this scraper is missing anything.
+
+**No new location-detection logic needed.** Like MSCS, the whole employer is inherently inside the geographic area being filtered for — `fixedLocation: "Memphis, Tennessee"` on the one config row does the same job `icims-employers.js` already does.
+
+**`lib/posted-date.js` gained two new relative-date patterns.** NEOGOV phrases relative dates differently from Workday — "Posted 2 weeks ago" and "Posted more than 30 days ago" instead of Workday's "Posted 11 Days Ago" / "Posted 30+ Days Ago" — same underlying idea (days-ago math off the scrape timestamp, capped bucket flagged `approx`), just different English. Verified against real text pulled from Nashville and King County's live postings before writing the patterns, not guessed.
+
+**How to verify yourself:**
+1. `node scripts/run-neogov-employer.js cityofmemphis` — should print `City of Memphis: 0 new, 0 updated, 0 unchanged` today; `data/scraper-health.json`'s `cityofmemphis` entry should show `"ok": true` (a first-ever run of 0 isn't flagged unhealthy — only a *drop* from a previously-healthy nonzero count is, per Phase 8's `classifyEmptyResult`).
+2. Confirm the mechanism itself works: `curl -s -H "X-Requested-With: XMLHttpRequest" "https://www.governmentjobs.com/careers/home/index?agency=nashville" | grep -o "job-postings-number"` should find real matches.
+3. Confirm the 2018 red herring yourself: `curl -s "https://www.governmentjobs.com/careers/memphistn/jobs/newprint/2098290" | grep -A2 "CLOSING DATE"` — should show `6/11/2018`.
+4. `node -e 'import("./lib/posted-date.js").then(({estimatePostedDate}) => console.log(estimatePostedDate("Posted 2 weeks ago", new Date().toISOString())))'` — should print a date exactly 14 days back, `approx: false`.
 
 ---
 
