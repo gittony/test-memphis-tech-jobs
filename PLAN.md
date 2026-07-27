@@ -526,6 +526,27 @@ New files:
 2. Run `node scripts/build-listings.js` — should add exactly 2 new First Horizon postings to `data/listings.json`, both `"matchedVia": "rules"`.
 3. Check `data/jobs.json` for `"sourceAts": "ultipro"` entries — every one should have a `description` field already populated (no separate detail fetch needed).
 
+### Slice 5: five more employers on already-built ATSes — pure config, no new scraper code
+
+With Oracle Recruiting Cloud (Slice 3) and UKG Pro/UltiPro (Slice 4) both already built, the remaining employers on those same ATSes from Phase 0's original list became genuinely cheap to add: AutoZone, University of Memphis, and International Paper (all originally triaged as Oracle Recruiting Cloud), Shelby County Government (added to the same ATS's config), and MicroPort Orthopedics (UKG Pro/UltiPro, the same family as First Horizon). No new library code — every one of these is a new object in `lib/oracle-recruiting-employers.js` or `lib/ultipro-employers.js`, the exact payoff this "group by ATS, not by company" strategy was supposed to produce.
+
+**Live investigation still mattered for each one** — Phase 0's guesses weren't uniformly reliable (see Slice 4's First Horizon correction):
+- **University of Memphis** genuinely still redirects to Oracle Fusion (via a `workforum.memphis.edu` vanity front-end) — confirming the original triage right, but on a different regional pod (`.fa.ocs.oraclecloud.com`, not `.fa.us2.oraclecloud.com` like Hilton/AutoZone) and a different site number.
+- **AutoZone**, **International Paper**, and **Shelby County Government** all confirmed straightforwardly via a direct site search.
+- Every employer needed its own `memphisLocationFacetId`/GeographyId discovered fresh (per Slice 3's note, these are assigned per Oracle tenant, not reusable across employers) — found the same way each time: a `keyword=Memphis` search to find a candidate `GeographyId`, then confirmed via `selectedLocationsFacet` that it returns a materially different (usually smaller, more accurate) result set than the noisy keyword search.
+- **MicroPort Orthopedics** confirmed on UKG Pro/UltiPro; all 11 of its postings are in Arlington, Tennessee — a Memphis-metro suburb already on `MEMPHIS_AREA_LOCATIONS`' allowlist, so effectively their entire job list is in scope.
+
+**Result:** 355 new raw postings fetched (81 AutoZone + 141 University of Memphis + 6 International Paper + 116 Shelby County Government + 11 MicroPort). **4 passed** the tech-role title filter: AutoZone's Senior Software Engineer – Enterprise Search and Systems Engineer – SRE Enablement, Shelby County Government's Programmer Analyst II, and MicroPort's CNC Programmer. University of Memphis and International Paper both landed at zero passing postings today — not a bug (see below).
+
+**Two real filter-accuracy findings surfaced by this batch, neither fixed here (same "recall traded for precision" tradeoff already accepted in Phase 3, not something to change unilaterally):**
+- **A likely false positive:** MicroPort's "CNC Programmer" matched on the bare word "programmer," but reading the actual posting confirms it's a CNC-machining/manufacturing role (creates programs *for CNC equipment*), not a software job.
+- **More false negatives, the same shape as Phase 9's "Analytics Advisor" near-miss:** International Paper has three real IT roles at its Memphis office — "IT Platform Architect - CSE Salesforce," "IT Business Analyst - CSE (Salesforce)," "IT Solution Architect CSE - Data & Analytics" — none matched, because the title whitelist's `IT (developer|architect|technologist)` pattern requires those words adjacent to "IT," and none of these titles has them adjacent (there's always a qualifier word in between). AutoZone has a similar pattern: several genuine "Systems Engineer" roles (SAP, Cloud Ops, InfoSec-HCM, Apigee) didn't match anything in the whitelist, since there's no generic `systems engineer` pattern — only the specific "SRE"/`\bsre\b` posting happened to also contain a whitelisted term.
+
+**How to verify yourself:**
+1. Run `node scripts/run-all-oracle-recruiting.js` and `node scripts/run-all-ultipro.js` — should print one line per employer, all `new` counts matching a fresh run (81/141/6/116 for the four new Oracle employers, 11 for MicroPort).
+2. Run `node scripts/build-listings.js` — should add exactly 4 new postings to `data/listings.json`.
+3. Check `data/scraper-health.json` — all five new employer keys (`autozone`, `uofm`, `internationalpaper`, `shelbycounty`, `microport`) should show `"ok": true`.
+
 ---
 
 ## Branch protection for `main`
