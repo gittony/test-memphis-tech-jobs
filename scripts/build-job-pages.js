@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { fileURLToPath } from "node:url";
 import { fetchWorkdayJobDetail, jobBaseUrl } from "../lib/workday.js";
 import { fetchIcimsJobDescription } from "../lib/icims.js";
+import { fetchJobviteJobDescription } from "../lib/jobvite.js";
 import { WORKDAY_EMPLOYERS } from "../lib/workday-employers.js";
 import { sanitizeAndExcerpt } from "../lib/sanitize-description.js";
 import { renderJobPage } from "../lib/render-job-page.js";
@@ -76,6 +77,16 @@ async function fetchDescription(listing) {
     }
   }
 
+  if (listing.sourceAts === "jobvite") {
+    try {
+      const text = await fetchJobviteJobDescription(listing.url);
+      return text ? { text, isPlainText: false } : null;
+    } catch (err) {
+      console.error(`- ${listing.id}: Jobvite description fetch failed (${err.message}), rendering fallback`);
+      return null;
+    }
+  }
+
   return null;
 }
 
@@ -95,7 +106,7 @@ for (const listing of listings) {
   written += 1;
 
   // Same politeness delay used by every other per-job fetch in this project.
-  if (listing.sourceAts === "workday" || listing.sourceAts === "icims") {
+  if (listing.sourceAts === "workday" || listing.sourceAts === "icims" || listing.sourceAts === "jobvite") {
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
 }

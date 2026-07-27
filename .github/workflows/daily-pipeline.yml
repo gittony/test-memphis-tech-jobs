@@ -62,6 +62,12 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
 
+      - name: Fetch Jobvite employers
+        id: fetch_jobvite
+        run: node scripts/run-all-jobvite.js
+        continue-on-error: true
+        timeout-minutes: 10
+
       - name: Record fetch step outcomes
         run: node scripts/record-step-outcomes.js
         env:
@@ -69,6 +75,7 @@ jobs:
           FETCH_ICIMS_OUTCOME: ${{ steps.fetch_icims.outcome }}
           FETCH_ORACLE_OUTCOME: ${{ steps.fetch_oracle.outcome }}
           FETCH_ULTIPRO_OUTCOME: ${{ steps.fetch_ultipro.outcome }}
+          FETCH_JOBVITE_OUTCOME: ${{ steps.fetch_jobvite.outcome }}
 
       - name: Write run summary
         run: node scripts/write-run-summary.js
