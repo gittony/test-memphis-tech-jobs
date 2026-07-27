@@ -611,6 +611,21 @@ That incident exposed a real gap in Phase 8's monitoring: a step that hangs gets
 
 ---
 
+### Slice 10: Buckman — Jobvite, first employer on this ATS
+
+Phase 0's URL (`jobs.jobvite.com/buckman`) is still correct. The root careers page is client-rendered (no job links in the raw HTML), but the department-filtered listing page — `jobs.jobvite.com/buckman/jobs/team`, with no `?d=` filter at all — is fully server-rendered HTML: every job grouped under a `<h3 class="h2">` department heading, in one `<table class="jv-job-list">` per department, no pagination for a company this size (44 postings total). New `lib/jobvite.js`, following the same shape as every other ATS client here.
+
+**No posted date in the list view — but a real one lives on each job's own detail page.** Unlike the list, a job's detail page embeds a `<script type="application/ld+json">` block with real schema.org `JobPosting` data: an exact `datePosted` and the full HTML `description`. Since fetching every posting's detail page at scrape time isn't worth it for jobs that will mostly never be shown (same reasoning as Workday/iCIMS), `postedOn` is left `null` at scrape time — same as iCIMS — and `fetchJobviteJobDescription()` pulls the JSON-LD description lazily, wired into `build-job-pages.js` alongside Workday/iCIMS's other lazy-fetch branches, only for postings that already pass `classify()`.
+
+**0 of 44 pass the tech-role filter — and this is the expected/non-bug kind, not Orgill's kind.** 8 postings are in Memphis, but none carry an unambiguous tech-role title; the closest is "Digital Innovation Engineer," which `lib/filter.js`'s own comment already explains is deliberately excluded — the whitelist matches *specific* tech-role phrases ("data engineer," "cloud engineer," "security engineer," etc.), not a bare "engineer," precisely because a title that vague could mean anything. Not flagged as a gap the way Orgill's unambiguous "Sr Developer Snowflake Data Platform" was.
+
+**How to verify yourself:**
+1. `node scripts/run-jobvite-employer.js buckman` — should print `Buckman: 0 new, 0 updated, 0 unchanged` (already scraped once during this work) and 44 total.
+2. `curl -s https://jobs.jobvite.com/buckman/jobs/team | grep -c 'jv-job-list-name'` — should show real job rows without needing a browser.
+3. `node -e 'import("./lib/jobvite.js").then(({fetchJobviteJobDescription}) => fetchJobviteJobDescription("https://jobs.jobvite.com/buckman/job/oK0pAfwt").then(console.log))'` — should print real HTML description text.
+
+---
+
 ## Branch protection for `main`
 
 Not a numbered phase — an operational/process change layered on top of everything above, added once the project had enough real history to be worth protecting against an unreviewed bad change landing directly on `main`.
