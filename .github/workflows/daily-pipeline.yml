@@ -35,6 +35,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Snapshot scraper health before this run
+        run: cp data/scraper-health.json /tmp/scraper-health-before.json
+
       - name: Fetch Workday employers
         id: fetch_workday
         run: node scripts/run-all-workday.js
@@ -59,12 +62,6 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
 
-      - name: Fetch NEOGOV employers
-        id: fetch_neogov
-        run: node scripts/run-all-neogov.js
-        continue-on-error: true
-        timeout-minutes: 10
-
       - name: Record fetch step outcomes
         run: node scripts/record-step-outcomes.js
         env:
@@ -72,7 +69,11 @@ jobs:
           FETCH_ICIMS_OUTCOME: ${{ steps.fetch_icims.outcome }}
           FETCH_ORACLE_OUTCOME: ${{ steps.fetch_oracle.outcome }}
           FETCH_ULTIPRO_OUTCOME: ${{ steps.fetch_ultipro.outcome }}
-          FETCH_NEOGOV_OUTCOME: ${{ steps.fetch_neogov.outcome }}
+
+      - name: Write run summary
+        run: node scripts/write-run-summary.js
+        env:
+          SCRAPER_HEALTH_BEFORE_PATH: /tmp/scraper-health-before.json
 
       - name: Classify and enrich
         run: node scripts/build-listings.js
