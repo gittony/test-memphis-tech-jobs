@@ -598,6 +598,19 @@ That incident exposed a real gap in Phase 8's monitoring: a step that hangs gets
 
 ---
 
+### Slice 9: Orgill — moved off iCIMS onto UKG Pro's newer Recruiting product
+
+`jobs-orgill.icims.com` (Phase 0's triage) now 404s. Orgill's current careers page (`orgill.com/careers`) links out to `hrdwr.rec.pro.ukg.net` — UKG's newer "Pro Recruiting" product, a different subdomain style from `recruiting.ultipro.com` (First Horizon/MicroPort's older UltiPro product). Worth checking directly rather than assuming a new client was needed: the exact same `JobBoard/{boardId}/JobBoardView/LoadSearchResults` endpoint `lib/ultipro.js` already calls works identically here too — same response shape, same fields. One more config row, zero new code, same pattern as Slice 5.
+
+**86 real postings, 0 pass the tech-role filter — and this time that's a real gap worth naming, not a non-bug.** Unlike UTHSC/MSCS/City of Memphis (genuinely non-technical employers), Orgill has real IT roles at its Collierville, TN headquarters that the current title whitelist simply doesn't recognize: `Sr Developer Snowflake Data Platform (MDM)` is a real data-engineering role in a qualifying Memphis-area city, but `lib/filter.js`'s title patterns only match "web developer," "database developer," and "IT developer" — a bare "Sr Developer" title (or "Sr Developer <anything>") matches none of them. Documented here rather than fixed unilaterally, consistent with how AutoZone's and International Paper's similar title-whitelist gaps were handled in Slice 5 — the whitelist is a deliberate precision/recall tradeoff from Phase 3, not something to patch reactively one title at a time without stepping back at it as a whole.
+
+**How to verify yourself:**
+1. `node scripts/run-ultipro-employer.js orgill` — should print `Orgill: 0 new, 0 updated, 0 unchanged` (already scraped once during this work) and 86 total for this employer.
+2. Confirm the old iCIMS URL is dead: `curl -I https://jobs-orgill.icims.com` should return `404`.
+3. `python3 -c "import json; d=json.load(open('data/jobs.json')); print([j['title'] for j in d if j['company']=='Orgill' and 'Snowflake' in j['title']])"` — should show the missed Snowflake developer role.
+
+---
+
 ## Branch protection for `main`
 
 Not a numbered phase — an operational/process change layered on top of everything above, added once the project had enough real history to be worth protecting against an unreviewed bad change landing directly on `main`.
