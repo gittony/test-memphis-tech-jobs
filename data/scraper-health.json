@@ -1,123 +1,124 @@
 [
   {
     "employer": "alsac",
-    "jobCount": 27,
-    "ranAt": "2026-10-20T15:37:43.477Z",
+    "jobCount": 25,
+    "ranAt": "2026-10-21T15:54:55.587Z",
     "ok": true
   },
   {
     "employer": "autozone",
-    "jobCount": 141,
-    "ranAt": "2026-10-20T15:41:32.221Z",
+    "jobCount": 146,
+    "ranAt": "2026-10-21T16:03:50.229Z",
     "ok": true
   },
   {
     "employer": "buckman",
-    "jobCount": 47,
-    "ranAt": "2026-10-20T15:42:00.561Z",
+    "jobCount": 46,
+    "ranAt": "2026-10-21T16:04:20.936Z",
     "ok": true
   },
   {
     "employer": "cityofmemphis",
-    "jobCount": 22,
-    "ranAt": "2026-10-20T15:41:55.325Z",
+    "jobCount": 23,
+    "ranAt": "2026-10-21T16:04:16.158Z",
     "ok": true
   },
   {
     "employer": "evernorth",
-    "jobCount": 522,
-    "ranAt": "2026-10-20T15:39:54.164Z",
+    "jobCount": 516,
+    "ranAt": "2026-10-21T15:56:58.965Z",
     "ok": true
   },
   {
     "employer": "firsthorizon",
     "jobCount": 2,
-    "ranAt": "2026-10-20T15:41:56.342Z",
+    "ranAt": "2026-10-21T16:04:17.119Z",
     "ok": true
   },
   {
     "employer": "hilton",
     "jobCount": 15,
-    "ranAt": "2026-10-20T15:41:31.262Z",
+    "ranAt": "2026-10-21T16:03:48.254Z",
     "ok": true
   },
   {
     "employer": "icims-step",
     "jobCount": 0,
-    "ranAt": "2026-10-20T15:42:01.248Z",
+    "ranAt": "2026-10-21T16:04:21.686Z",
     "ok": true
   },
   {
     "employer": "internationalpaper",
     "jobCount": 3,
-    "ranAt": "2026-10-20T15:41:42.749Z",
+    "ranAt": "2026-10-21T16:04:03.304Z",
     "ok": true
   },
   {
     "employer": "jobvite-step",
     "jobCount": 0,
-    "ranAt": "2026-10-20T15:42:01.248Z",
+    "ranAt": "2026-10-21T16:04:21.686Z",
     "ok": true
   },
   {
     "employer": "maa",
     "jobCount": 0,
-    "ranAt": "2026-10-20T15:40:27.129Z",
+    "ranAt": "2026-10-21T15:57:29.010Z",
     "ok": false,
     "error": "Workday API returned 400 at offset 0 (maa/MAA)"
   },
   {
     "employer": "medtronic",
-    "jobCount": 1067,
-    "ranAt": "2026-10-20T15:36:04.229Z",
-    "ok": true
+    "jobCount": 0,
+    "ranAt": "2026-10-21T15:53:34.578Z",
+    "ok": false,
+    "error": "Workday API returned 502 at offset 840 (medtronic/MedtronicCareers)"
   },
   {
     "employer": "methodist",
-    "jobCount": 504,
-    "ranAt": "2026-10-20T15:40:51.422Z",
+    "jobCount": 501,
+    "ranAt": "2026-10-21T15:57:53.464Z",
     "ok": true
   },
   {
     "employer": "microport",
     "jobCount": 2,
-    "ranAt": "2026-10-20T15:41:57.354Z",
+    "ranAt": "2026-10-21T16:04:18.372Z",
     "ok": true
   },
   {
     "employer": "mscs-central",
-    "jobCount": 15,
-    "ranAt": "2026-10-20T15:41:29.730Z",
+    "jobCount": 19,
+    "ranAt": "2026-10-21T16:03:47.093Z",
     "ok": true
   },
   {
     "employer": "oracle-recruiting-step",
     "jobCount": 0,
-    "ranAt": "2026-10-20T15:42:01.248Z",
+    "ranAt": "2026-10-21T16:04:21.686Z",
     "ok": true
   },
   {
     "employer": "orgill",
-    "jobCount": 106,
-    "ranAt": "2026-10-20T15:41:58.210Z",
+    "jobCount": 105,
+    "ranAt": "2026-10-21T16:04:18.718Z",
     "ok": true
   },
   {
     "employer": "raymondjames",
-    "jobCount": 310,
-    "ranAt": "2026-10-20T15:40:35.634Z",
+    "jobCount": 305,
+    "ranAt": "2026-10-21T15:57:38.158Z",
     "ok": true
   },
   {
     "employer": "sedgwick",
-    "jobCount": 595,
-    "ranAt": "2026-10-20T15:37:45.129Z",
+    "jobCount": 591,
+    "ranAt": "2026-10-21T15:54:57.196Z",
     "ok": true
   },
   {
     "employer": "shelbycounty",
     "jobCount": 137,
-    "ranAt": "2026-10-20T15:41:43.414Z",
+    "ranAt": "2026-10-21T16:04:04.016Z",
     "ok": true
   },
   {
@@ -128,44 +129,45 @@
   },
   {
     "employer": "stjude",
-    "jobCount": 222,
-    "ranAt": "2026-10-20T15:37:31.719Z",
+    "jobCount": 217,
+    "ranAt": "2026-10-21T15:54:44.378Z",
     "ok": true
   },
   {
     "employer": "stryker",
-    "jobCount": 1488,
-    "ranAt": "2026-10-20T15:38:19.792Z",
+    "jobCount": 1487,
+    "ranAt": "2026-10-21T15:55:29.714Z",
     "ok": true
   },
   {
     "employer": "terminix",
-    "jobCount": 137,
-    "ranAt": "2026-10-20T15:40:28.856Z",
+    "jobCount": 143,
+    "ranAt": "2026-10-21T15:57:30.668Z",
     "ok": true
   },
   {
     "employer": "ultipro-step",
     "jobCount": 0,
-    "ranAt": "2026-10-20T15:42:01.248Z",
+    "ranAt": "2026-10-21T16:04:21.686Z",
     "ok": true
   },
   {
     "employer": "uofm",
     "jobCount": 163,
-    "ranAt": "2026-10-20T15:41:36.670Z",
+    "ranAt": "2026-10-21T16:03:55.056Z",
     "ok": true
   },
   {
     "employer": "uthsc",
-    "jobCount": 226,
-    "ranAt": "2026-10-20T15:41:48.234Z",
+    "jobCount": 227,
+    "ranAt": "2026-10-21T16:04:09.045Z",
     "ok": true
   },
   {
     "employer": "workday-step",
     "jobCount": 0,
-    "ranAt": "2026-10-20T15:42:01.248Z",
-    "ok": true
+    "ranAt": "2026-10-21T16:04:21.686Z",
+    "ok": false,
+    "error": "Step \"Workday (entire step)\" did not complete successfully (outcome: failure) — likely timed out or crashed before finishing."
   }
 ]
